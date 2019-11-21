@@ -1,12 +1,12 @@
-local LibModule = CogWheel:Set("LibModule", 35)
+local LibModule = Wheel:Set("LibModule", 35)
 if (not LibModule) then	
 	return
 end
 
-local LibMessage = CogWheel("LibMessage")
+local LibMessage = Wheel("LibMessage")
 assert(LibMessage, "LibModule requires LibMessage to be loaded.")
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibModule requires LibEvent to be loaded.")
 
 -- Embed event functionality into this
@@ -175,7 +175,7 @@ do
 
 		elseif (button == "RightButton") then 
 			debugFrame:Hide()
-			LibModule:SendMessage("CG_DEBUG_FRAME_CLOSED")
+			LibModule:SendMessage("GP_DEBUG_FRAME_CLOSED")
 		end	
 	end)
 
@@ -290,7 +290,7 @@ local ModuleProtoType = {
 			-- Disable any embedded libraries
 			for i = #self.libraries, 1, -1 do
 				local libaryName = table_remove(self.libraries[i])
-				local library = CogWheel(libraryName)
+				local library = Wheel(libraryName)
 				if (library and library.OnDisable) then
 					library:OnDisable(self)
 				end
@@ -558,7 +558,8 @@ local ModuleProtoType = {
 			msg = msg:gsub("/(%w+)", "|cff77aaff/%1|r") 
 
 			-- camelcase or other words suspected to be code references
-			msg = msg:gsub("(%u?)(%l+)(%u)(%l+)", "|cff33ff33%1%2%3%4|r") 
+			msg = msg:gsub("(%u?%l+%u%l+)", "|cff33ff33%1|r") 
+			msg = msg:gsub("|r(%u%l+)", "%1|r") -- expands the coloring for multiple humps
 
 			-- assume bracketed entries are intended to be highlighted
 			msg = msg:gsub("%[(.-)%]", "|cff33ff33%1|r") 
@@ -638,7 +639,7 @@ LibModule.NewModule = function(self, name, ...)
 		-- Embed libraries
 		for i = libraryOffset, numArgs do
 			local libraryName = select(i, ...)
-			local library = CogWheel(libraryName)
+			local library = Wheel(libraryName)
 			if (library and library.Embed) then
 				library:Embed(module)
 				table_insert(module.libraries, libraryName)

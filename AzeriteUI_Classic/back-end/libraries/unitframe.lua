@@ -1,18 +1,18 @@
-local LibUnitFrame = CogWheel:Set("LibUnitFrame", 66)
+local LibUnitFrame = Wheel:Set("LibUnitFrame", 66)
 if (not LibUnitFrame) then	
 	return
 end
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibUnitFrame requires LibEvent to be loaded.")
 
-local LibFrame = CogWheel("LibFrame")
+local LibFrame = Wheel("LibFrame")
 assert(LibFrame, "LibUnitFrame requires LibFrame to be loaded.")
 
-local LibWidgetContainer = CogWheel("LibWidgetContainer")
+local LibWidgetContainer = Wheel("LibWidgetContainer")
 assert(LibWidgetContainer, "LibUnitFrame requires LibWidgetContainer to be loaded.")
 
-local LibTooltip = CogWheel("LibTooltip")
+local LibTooltip = Wheel("LibTooltip")
 assert(LibTooltip, "LibUnitFrame requires LibTooltip to be loaded.")
 
 LibEvent:Embed(LibUnitFrame)
@@ -342,7 +342,7 @@ end
 --------------------------------------------------------------------------
 -- Return or create the library default tooltip
 LibUnitFrame.GetUnitFrameTooltip = function(self)
-	return LibUnitFrame:GetTooltip("CG_UnitFrameTooltip") or LibUnitFrame:CreateTooltip("CG_UnitFrameTooltip")
+	return LibUnitFrame:GetTooltip("GP_UnitFrameTooltip") or LibUnitFrame:CreateTooltip("GP_UnitFrameTooltip")
 end
 
 LibUnitFrame.SetScript = function(self, scriptHandler, script)

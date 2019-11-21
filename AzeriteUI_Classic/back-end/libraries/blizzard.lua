@@ -1,9 +1,9 @@
-local LibBlizzard = CogWheel:Set("LibBlizzard", 36)
+local LibBlizzard = Wheel:Set("LibBlizzard", 37)
 if (not LibBlizzard) then 
 	return
 end
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibBlizzard requires LibEvent to be loaded.")
 
 -- Embed event functionality into this
@@ -270,6 +270,19 @@ UIWidgets["CastBars"] = function(self)
 	PetCastingBarFrame:SetParent(UIHider)
 	PetCastingBarFrame:UnregisterAllEvents()
 end 
+
+UIWidgets["Durability"] = function(self)
+	DurabilityFrame:UnregisterAllEvents()
+	DurabilityFrame:SetScript("OnShow", nil)
+	DurabilityFrame:SetScript("OnHide", nil)
+
+	-- Will this taint? 
+	-- This is to prevent the durability frame size 
+	-- affecting other anchors
+	DurabilityFrame:SetParent(UIHider)
+	DurabilityFrame:Hide()
+	DurabilityFrame.IsShown = function() return false end
+end
 
 UIWidgets["Minimap"] = function(self)
 

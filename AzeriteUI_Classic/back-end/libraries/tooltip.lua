@@ -1,22 +1,25 @@
-local LibTooltip = CogWheel:Set("LibTooltip", 56)
-if (not LibTooltip) then	
+local LibTooltip = Wheel:Set("LibTooltip", 69)
+if (not LibTooltip) then
 	return
 end
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibTooltip requires LibEvent to be loaded.")
 
-local LibSecureHook = CogWheel("LibSecureHook")
+local LibSecureHook = Wheel("LibSecureHook")
 assert(LibSecureHook, "LibTooltip requires LibSecureHook to be loaded.")
 
-local LibFrame = CogWheel("LibFrame")
+local LibFrame = Wheel("LibFrame")
 assert(LibFrame, "LibTooltip requires LibFrame to be loaded.")
 
-local LibTooltipScanner = CogWheel("LibTooltipScanner")
+local LibTooltipScanner = Wheel("LibTooltipScanner")
 assert(LibTooltipScanner, "LibTooltip requires LibTooltipScanner to be loaded.")
 
-local LibStatusBar = CogWheel("LibStatusBar")
+local LibStatusBar = Wheel("LibStatusBar")
 assert(LibStatusBar, "LibTooltip requires LibStatusBar to be loaded.")
+
+local LibPlayerData = Wheel("LibPlayerData")
+assert(LibPlayerData, "LibTooltip requires LibPlayerData to be loaded.")
 
 -- Embed functionality into the library
 LibFrame:Embed(LibTooltip)
@@ -84,7 +87,7 @@ LibTooltip.numTooltips = LibTooltip.numTooltips or 0 -- current number of toolti
 LibTooltip.blizzardBackdrops = LibTooltip.blizzardBackdrops or {}
 
 -- Inherit the template too, we override the older methods farther down anyway
-LibTooltip.tooltipTemplate = LibTooltip.tooltipTemplate or LibTooltip:CreateFrame("GameTooltip", "CG_TooltipTemplate", "UICenter")
+LibTooltip.tooltipTemplate = LibTooltip.tooltipTemplate or LibTooltip:CreateFrame("GameTooltip", "GP_TooltipTemplate", "UICenter")
 
 -- Shortcuts
 local Defaults = LibTooltip.defaults
@@ -99,7 +102,7 @@ local Backdrops = LibTooltip.blizzardBackdrops
 -- Constants we might change or make variable later on
 local TEXT_INSET = 10 -- text insets from tooltip edges
 local RIGHT_PADDING= 40 -- padding between left and right messages
-local LINE_PADDING = 4 -- padding between lines of text
+local LINE_PADDING = 2 -- padding between lines of text
 
 -- Fonts
 local FONT_TITLE = Game15Font_o1 
@@ -107,11 +110,14 @@ local FONT_NORMAL = Game13Font_o1 -- Game12Font_o1
 local FONT_VALUE = Game13Font_o1
 
 -- Blizzard textures we use 
-local BOSS_TEXTURE = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:16:16:-2:1|t"
-local FFA_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-FFA:16:12:-2:1:64:64:6:34:0:40|t"
-local FACTION_ALLIANCE_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-Alliance:16:12:-2:1:64:64:6:34:0:40|t"
-local FACTION_NEUTRAL_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-Neutral:16:12:-2:1:64:64:6:34:0:40|t"
-local FACTION_HORDE_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-Horde:16:16:-4:0:64:64:0:40:0:40|t"
+local BOSS_TEXTURE = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:14:14:-2:1|t" -- 1:1
+local FFA_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-FFA:14:10:-2:1:64:64:6:34:0:40|t" -- 4:3
+local FACTION_ALLIANCE_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-Alliance:14:10:-2:1:64:64:6:34:0:40|t" -- 4:3
+local FACTION_NEUTRAL_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-Neutral:14:10:-2:1:64:64:6:34:0:40|t" -- 4:3
+local FACTION_HORDE_TEXTURE = "|TInterface\\TargetingFrame\\UI-PVP-Horde:14:14:-4:0:64:64:0:40:0:40|t" -- 1:1
+
+-- Player constants
+local englishPlayerFaction, localizedPlayerFaction = UnitFactionGroup("player")
 
 -- Blizzard tooltips
 local blizzardTips = {
@@ -162,7 +168,6 @@ local fakeBackdrop = {
 }
 local fakeBackdropColor = { 0, 0, 0, .95 }
 local fakeBackdropBorderColor = { .3, .3, .3, 1 }
-
 
 -- Utility Functions
 ---------------------------------------------------------
@@ -285,21 +290,6 @@ local createNewLinePair = function(tooltip, lineIndex)
 	alignLine(tooltip, lineIndex)
 end 
 
--- Number abbreviations
-local short = function(value)
-	value = tonumber(value)
-	if (not value) then return "" end
-	if (value >= 1e9) then
-		return ("%.1fb"):format(value / 1e9):gsub("%.?0+([kmb])$", "%1")
-	elseif value >= 1e6 then
-		return ("%.1fm"):format(value / 1e6):gsub("%.?0+([kmb])$", "%1")
-	elseif value >= 1e3 or value <= -1e3 then
-		return ("%.1fk"):format(value / 1e3):gsub("%.?0+([kmb])$", "%1")
-	else
-		return tostring(math_floor(value))
-	end	
-end
-
 -- Time constants
 local DAY, HOUR, MINUTE = 86400, 3600, 60
 
@@ -319,24 +309,6 @@ local formatTime = function(time)
 		return ""
 	end	
 end
-
-
--- zhCN exceptions
-local gameLocale = GetLocale()
-if (gameLocale == "zhCN") then 
-	short = function(value)
-		value = tonumber(value)
-		if (not value) then return "" end
-		if (value >= 1e8) then
-			return ("%.1f亿"):format(value / 1e8):gsub("%.?0+([km])$", "%1")
-		elseif value >= 1e4 or value <= -1e3 then
-			return ("%.1f万"):format(value / 1e4):gsub("%.?0+([km])$", "%1")
-		else
-			return tostring(math_floor(value))
-		end 
-	end
-end 
-
 
 -- Default Color & Texture Tables
 --------------------------------------------------------------------------
@@ -1047,7 +1019,6 @@ Tooltip.SetSmartAnchor = function(self, parent, offsetX, offsetY)
 	self:Place(point, parent, rPoint, offsetX, offsetY)
 end 
 
-
 -- Returns the correct difficulty color compared to the player.
 -- Using this as a tooltip method to access our custom colors.
 Tooltip.GetDifficultyColorByLevel = function(self, level)
@@ -1074,8 +1045,7 @@ Tooltip.SetAction = function(self, slot)
 	end
 
 	-- Switch to item function if the action is an item
-	local actionType, id = GetActionInfo(slot)
-	if (actionType == "item") then 
+	if (self:IsActionItem(slot)) then 
 		return self:SetActionItem(slot)
 	end 
 
@@ -1121,7 +1091,7 @@ Tooltip.SetAction = function(self, slot)
 				self:AddLine(data.spellRange, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3], true)
 
 			elseif data.spellCost then 
-				self:AddLine(data.spellCost, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3], true, true)
+				self:AddLine(data.spellCost, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3], true)
 			end 
 		end 
 
@@ -1439,22 +1409,31 @@ Tooltip.SetUnit = function(self, unit)
 			-- name 
 			local displayName = data.name
 			if data.isPlayer then 
-				if data.isFFA then
-					displayName = FFA_TEXTURE .. " " .. displayName
-				elseif (data.isPVP and data.englishFaction) then
-					if (data.englishFaction == "Horde") then
-						displayName = FACTION_HORDE_TEXTURE .. " " .. displayName
-					elseif (data.englishFaction == "Alliance") then
-						displayName = FACTION_ALLIANCE_TEXTURE .. " " .. displayName
-					elseif (data.englishFaction == "Neutral") then
-						-- They changed this to their new atlas garbage in Legion, 
-						-- so for the sake of simplicty we'll just use the FFA PvP icon instead. Works.
+				if (data.showPvPFactionWithName) then 
+					if data.isFFA then
 						displayName = FFA_TEXTURE .. " " .. displayName
+					elseif (data.isPVP and data.englishFaction) then
+						if (data.englishFaction == "Horde") then
+							displayName = FACTION_HORDE_TEXTURE .. " " .. displayName
+						elseif (data.englishFaction == "Alliance") then
+							displayName = FACTION_ALLIANCE_TEXTURE .. " " .. displayName
+						elseif (data.englishFaction == "Neutral") then
+							-- They changed this to their new atlas garbage in Legion, 
+							-- so for the sake of simplicty we'll just use the FFA PvP icon instead. Works.
+							displayName = FFA_TEXTURE .. " " .. displayName
+						end
 					end
+				end
+				if (data.pvpRankName) then 
+					displayName = displayName .. colors.quest.gray.colorCode.. " (" .. data.pvpRankName .. ")|r"
 				end
 			else 
 				if data.isBoss then
 					displayName = BOSS_TEXTURE .. " " .. displayName
+				elseif (data.classification == "rare") or (data.classification == "rareelite") then
+					displayName = displayName .. colors.quality[3].colorCode .. " (" .. ITEM_QUALITY3_DESC .. ")|r"
+				elseif (data.classification == "elite") then 
+					displayName = displayName .. colors.title.colorCode .. " (" .. ELITE .. ")|r"
 				end
 			end
 
@@ -1475,60 +1454,76 @@ Tooltip.SetUnit = function(self, unit)
 				self:AddLine(displayName, r, g, b, true)
 			end 
 
-			-- titles
-			-- *add player title to a separate line, same as with npc titles?
-			if data.title then 
-				self:AddLine(data.title, colors.normal[1], colors.normal[2], colors.normal[3], true)
-			end 
-
 			-- Players
 			if data.isPlayer then 
-				if data.guild then 
-					self:AddLine(data.guild, colors.title[1], colors.title[2], colors.title[3])
-				end  
+				if data.isDead then 
+					self:AddLine(data.isGhost and DEAD or CORPSE, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+				else 
+					if data.guild then 
+						self:AddLine("<"..data.guild..">", colors.title[1], colors.title[2], colors.title[3])
+					end  
 
-				local levelLine
+					local levelLine
 
-				if data.raceDisplayName then 
-					levelLine = (levelLine and levelLine.." " or "") .. data.raceDisplayName
-				end 
-
-				if (data.classDisplayName and data.class) then 
-					if self.colorClass then 
-						levelLine = (levelLine and levelLine.." " or "") .. colors.class[data.class].colorCode .. data.classDisplayName .. "|r"
-					else 
-						levelLine = (levelLine and levelLine.." " or "") .. data.classDisplayName
+					if data.raceDisplayName then 
+						levelLine = (levelLine and levelLine.." " or "") .. data.raceDisplayName
 					end 
-				end 
 
-				if levelLine then 
-					self:AddLine(levelLine, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
-				end 
+					if (data.classDisplayName and data.class) then 
+						if self.colorClass then 
+							levelLine = (levelLine and levelLine.." " or "") .. colors.class[data.class].colorCode .. data.classDisplayName .. "|r"
+						else 
+							levelLine = (levelLine and levelLine.." " or "") .. data.classDisplayName
+						end 
+					end 
 
-				-- player faction (Horde/Alliance/Neutral)
-				if data.localizedFaction then 
-					self:AddLine(data.localizedFaction)
-				end 
+					if levelLine then 
+						self:AddLine(levelLine, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+					end 
 
-
-			-- Battle Pets
-			elseif data.isPet then 
-
+					-- player faction (Horde/Alliance/Neutral)
+					if data.localizedFaction then 
+						self:AddLine(data.localizedFaction, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+					end 
+				end
 
 			-- All other NPCs
-			else  
-				if data.city then 
-					self:AddLine(data.city, colors.title[1], colors.title[2], colors.title[3])
-				end 
+			else 
 
-				-- Beast etc 
-				if data.creatureFamily then 
-					self:AddLine(data.creatureType, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+				if data.isDead then 
+					self:AddLine(data.isGhost and DEAD or CORPSE, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
 
-				-- Humanoid, Crab, etc 
-				elseif data.creatureType then 
-					self:AddLine(data.creatureType, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
-				end  
+					if (data.isSkinnable) then 
+						self:AddLine(data.skinnableMsg, data.skinnableColor[1], data.skinnableColor[2], data.skinnableColor[3])
+					end
+				else 
+					-- titles
+					if data.title then 
+						self:AddLine("<"..data.title..">", colors.normal[1], colors.normal[2], colors.normal[3], true)
+					end 
+
+					if data.city then 
+						self:AddLine(data.city, colors.title[1], colors.title[2], colors.title[3])
+					end 
+
+					-- Beast etc 
+					if data.creatureFamily then 
+						self:AddLine(data.creatureFamily, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+
+					-- Humanoid, Crab, etc 
+					elseif data.creatureType then 
+						self:AddLine(data.creatureType, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+					end 
+
+					-- player faction (Horde/Alliance/Neutral)
+					if data.localizedFaction then 
+						self:AddLine(data.localizedFaction, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
+					end 
+
+					if (data.isCivilian) then 
+						self:AddLine(PVP_RANK_CIVILIAN, data.civilianColor[1], data.civilianColor[2], data.civilianColor[3])
+					end
+				end
 			end 
 
 			if self:UpdateBarValues(unit, true) then 
@@ -1623,9 +1618,13 @@ local ShowAuraTooltip = function(self, data)
 	-- we make sure the bars are reset!
 	self:ClearStatusBars(true) -- suppress layout updates
 
-	self:AddLine(data.name, colors.title[1], colors.title[2], colors.title[3], true)
+	if (data.debuffTypeLabel) then 
+		self:AddDoubleLine(data.name, data.debuffTypeLabel, colors.title[1], colors.title[2], colors.title[3], colors.quest.gray[1], colors.quest.gray[2], colors.quest.gray[3], true, true)
+	else
+		self:AddLine(data.name, colors.title[1], colors.title[2], colors.title[3], true)
+	end 
 
-	if data.spellId then 
+	if (data.spellId and (not self.hideSpellID)) then 
 		-- How to NOT localize. This is just baaaaad!
 		local spellIDText = STAT_CATEGORY_SPELL .. " " .. ID
 		self:AddLine(spellIDText .. ": " .. data.spellId, colors.offwhite[1], colors.offwhite[2], colors.offwhite[3])
@@ -1686,6 +1685,34 @@ Tooltip.SetUnitDebuff = function(self, unit, debuffID, filter)
 			ShowAuraTooltip(self, data)
 		end 
 	end 
+end
+
+Tooltip.SetTrackingSpell = function(self)
+	if (not self.owner) then
+		self:Hide()
+		return
+	end
+
+	local data = self:GetTooltipDataForTrackingSpell(self.data)
+	if (data and data.name) then 
+
+		-- Because a millionth of a second matters.
+		local colors = self.colors
+
+		-- Shouldn't be any bars here, but if for some reason 
+		-- the tooltip wasn't properly hidden before this, 
+		-- we make sure the bars are reset!
+		self:ClearStatusBars(true) -- suppress layout updates
+
+		if data.name then 
+			self:AddLine(data.name, colors.title[1], colors.title[2], colors.title[3], true)
+		end
+		if data.description then 
+			self:AddLine(data.description, colors.quest.green[1], colors.quest.green[2], colors.quest.green[3], true)
+		end 
+
+		self:Show()
+	end
 end
 
 -- The same as the old Blizz call is doing. Bad. 
@@ -2034,7 +2061,7 @@ Tooltip.UpdateBarValues = function(self, unit, noUpdate)
 	local guid = UnitGUID(unit)
 	local disconnected = not UnitIsConnected(unit)
 	local dead = UnitIsDeadOrGhost(unit)
-	local needUpdate
+	local needUpdate, isRealValue
 
 	for i,bar in ipairs(self.bars) do
 		local isShown = bar:IsShown()
@@ -2043,9 +2070,20 @@ Tooltip.UpdateBarValues = function(self, unit, noUpdate)
 				local updateNeeded = self:ClearStatusBar(i,true)
 				needUpdate = needUpdate or updateNeeded
 			else 
-				local min = UnitHealth(unit) or 0
-				local max = UnitHealthMax(unit) or 0
-
+				local min,max
+				isRealValue = UnitIsUnit(unit, "player") or UnitIsUnit(unit, "pet") or UnitInParty(unit) or UnitInRaid(unit)
+				if (not isRealValue) then 
+					min = LibPlayerData:UnitHealth(unit)
+					max = LibPlayerData:UnitHealthMax(unit)
+					if (min and max) then 
+						isRealValue = true
+					end
+				end 
+				if (not min) or (not max) then 
+					min = UnitHealth(unit) or 0
+					max = UnitHealthMax(unit) or 0
+				end 
+			
 				-- Only show units with health, hide the bar otherwise
 				if ((min > 0) and (max > 0)) then 
 					if (not isShown) then 
@@ -2088,7 +2126,8 @@ Tooltip.UpdateBarValues = function(self, unit, noUpdate)
 			end
 		end 
 		if (bar:IsShown() and self.PostUpdateStatusBar) then 
-			self:PostUpdateStatusBar(bar, bar:GetValue(), bar:GetMinMaxValues())
+			local min, max = bar:GetMinMaxValues()
+			self:PostUpdateStatusBar(bar, bar:GetValue(), min, max, isRealValue)
 		end 
 	end 
 
@@ -2319,7 +2358,7 @@ LibTooltip.CreateTooltip = function(self, name)
 	LibTooltip.numTooltips = LibTooltip.numTooltips + 1
 
 	-- Note that the global frame name is unrelated to the tooltip name requested by the modules.
-	local tooltipName = "CG_GameTooltip_"..LibTooltip.numTooltips
+	local tooltipName = "GP_GameTooltip_"..LibTooltip.numTooltips
 
 	local tooltip = setmetatable(LibTooltip:CreateFrame("Frame", tooltipName, "UICenter"), Tooltip_MT)
 	tooltip:Hide() -- keep it hidden while setting it up
@@ -2438,7 +2477,7 @@ LibTooltip.SetBlizzardTooltipBackdropOffsets = function(self, tooltip, left, rig
 end 
 
 LibTooltip.SetBlizzardTooltipBackdrop = function(self, tooltip, backdrop)
-	if (not Backdrops[tooltip]) then 
+	if (not Backdrops[tooltip]) then
 		local backdrop = CreateFrame("Frame", nil, tooltip)
 		backdrop:SetFrameStrata(tooltip:GetFrameStrata())
 		backdrop:SetFrameLevel(tooltip:GetFrameLevel())
@@ -2446,9 +2485,9 @@ LibTooltip.SetBlizzardTooltipBackdrop = function(self, tooltip, backdrop)
 		backdrop:SetPoint("RIGHT", 0, 0)
 		backdrop:SetPoint("TOP", 0, 0)
 		backdrop:SetPoint("BOTTOM", 0, 0)
-		hooksecurefunc(tooltip, "SetFrameStrata", function(self) backdrop:SetFrameLevel(self:GetFrameLevel()) end)
-		hooksecurefunc(tooltip, "SetFrameLevel", function(self) backdrop:SetFrameLevel(self:GetFrameLevel()) end)
-		hooksecurefunc(tooltip, "SetParent", function(self) backdrop:SetFrameLevel(self:GetFrameLevel()) end)
+		hooksecurefunc(tooltip, "SetFrameStrata", function() backdrop:SetFrameLevel(tooltip:GetFrameLevel()) end)
+		hooksecurefunc(tooltip, "SetFrameLevel", function() backdrop:SetFrameLevel(tooltip:GetFrameLevel()) end)
+		hooksecurefunc(tooltip, "SetParent", function() backdrop:SetFrameLevel(tooltip:GetFrameLevel()) end)
 		Backdrops[tooltip] = backdrop
 	end 
 	Backdrops[tooltip]:SetBackdrop(nil)

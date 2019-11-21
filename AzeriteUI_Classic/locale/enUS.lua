@@ -1,5 +1,5 @@
 local ADDON = ...
-local L = CogWheel("LibLocale"):NewLocale(ADDON, "enUS", true) -- only enUS must have the 'true' argument!
+local L = Wheel("LibLocale"):NewLocale(ADDON, "enUS", true) -- only enUS must have the 'true' argument!
 if (not L) then 
 	return 
 end 
@@ -95,7 +95,7 @@ L["%s to toggle your Bags."] = "%s to toggle your bags."
 -- Remember that these shall fit on a button, 
 -- so they can't be that long. 
 -- You don't need a full description here. 
-L["Debug Mode"] = true 
+L["Debug Mode"] = "Debug Tools" -- it's not really a mode, just tools. 
 L["Debug Console"] = true 
 L["Load Console"] = true
 L["Unload Console"] = true
@@ -118,6 +118,8 @@ L["Party Frames"] = true
 L["Raid Frames"] = true
 L["PvP Frames"] = true
 L["HUD"] = true
+L["CastBar"] = true
+L["ClassPower"] = true
 L["Alerts"] = true
 L["TalkingHead"] = true
 L["NamePlates"] = true
@@ -128,7 +130,7 @@ L["Friends"] = true
 L["Explorer Mode"] = true
 L["Player Fading"] = true
 L["Tracker Fading"] = true
-L["Healer Mode"] = true 
+L["Healer Mode"] = "Healer Layout" -- it's a layout change, so let's reflect this!
 
 -- Menu button tooltips, not actually used at the moment. 
 L["Click to enable the Stance Bar."] = true

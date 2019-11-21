@@ -1,18 +1,18 @@
-local LibSecureButton = CogWheel:Set("LibSecureButton", 63)
+local LibSecureButton = Wheel:Set("LibSecureButton", 67)
 if (not LibSecureButton) then	
 	return
 end
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibSecureButton requires LibEvent to be loaded.")
 
-local LibFrame = CogWheel("LibFrame")
+local LibFrame = Wheel("LibFrame")
 assert(LibFrame, "LibSecureButton requires LibFrame to be loaded.")
 
-local LibSound = CogWheel("LibSound")
+local LibSound = Wheel("LibSound")
 assert(LibSound, "LibSecureButton requires LibSound to be loaded.")
 
-local LibTooltip = CogWheel("LibTooltip")
+local LibTooltip = Wheel("LibTooltip")
 assert(LibTooltip, "LibSecureButton requires LibTooltip to be loaded.")
 
 -- Embed functionality into this
@@ -53,10 +53,8 @@ local GetActionTexture = _G.GetActionTexture
 local GetBindingKey = _G.GetBindingKey 
 local GetCursorInfo = _G.GetCursorInfo
 local GetMacroSpell = _G.GetMacroSpell
-local GetOverrideBarIndex = _G.GetOverrideBarIndex
 local GetSpellInfo = _G.GetSpellInfo
 local GetSpellSubtext = _G.GetSpellSubtext
-local GetTempShapeshiftBarIndex = _G.GetTempShapeshiftBarIndex
 local GetTime = _G.GetTime
 local HasAction = _G.HasAction
 local IsActionInRange = _G.IsActionInRange
@@ -68,11 +66,8 @@ local IsUsableAction = _G.IsUsableAction
 local SetClampedTextureRotation = _G.SetClampedTextureRotation
 local UnitClass = _G.UnitClass
 
--- TODO: remove and fix
-GetOverrideBarIndex = function() return 0 end
-GetVehicleBarIndex = function() return 0 end
-GetTempShapeshiftBarIndex = function() return 0 end
-GetVehicleBarIndex = function() return 0 end
+-- Will implement this through the back-end
+local IsSpellOverlayed = function() end
 
 -- Doing it this way to make the transition to library later on easier
 LibSecureButton.embeds = LibSecureButton.embeds or {} 
@@ -323,6 +318,7 @@ local Update = function(self, event, ...)
 
 	elseif (event == "ACTIONBAR_SLOT_CHANGED") then
 		if ((arg1 == 0) or (arg1 == self.buttonAction)) then
+			self:HideOverlayGlow()
 			self:Update()
 			self:UpdateAutoCastMacro()
 		end
@@ -333,7 +329,7 @@ local Update = function(self, event, ...)
 	elseif (event == "ACTIONBAR_UPDATE_USABLE") then
 		self:UpdateUsable()
 
-	elseif 	(event == "ACTIONBAR_UPDATE_STATE") then
+	elseif (event == "ACTIONBAR_UPDATE_STATE") then
 		self:UpdateFlash()
 		--self:UpdateCheckedState()
 
@@ -354,9 +350,34 @@ local Update = function(self, event, ...)
 	elseif (event == "PLAYER_MOUNT_DISPLAY_CHANGED") then 
 		self:UpdateUsable()
 
+	elseif (event == "GP_SPELL_ACTIVATION_OVERLAY_GLOW_SHOW") then
+		local spellID = self:GetSpellID()
+		if (spellID and (spellID == arg1)) then
+			self:ShowOverlayGlow()
+		else
+			local actionType, id = GetActionInfo(self.buttonAction)
+			if (actionType == "flyout") and FlyoutHasSpell(id, arg1) then
+				self:ShowOverlayGlow()
+			end
+		end
+
+	elseif (event == "GP_SPELL_ACTIVATION_OVERLAY_GLOW_HIDE") then
+		local spellID = self:GetSpellID()
+		if (spellID and (spellID == arg1)) then
+			self:HideOverlayGlow()
+		else
+			local actionType, id = GetActionInfo(self.buttonAction)
+			if actionType == "flyout" and FlyoutHasSpell(id, arg1) then
+				self:HideOverlayGlow()
+			end
+		end
+
 	elseif (event == "SPELL_UPDATE_CHARGES") then
 		self:UpdateCount()
 
+	elseif (event == "SPELLS_CHANGED") or (event == "UPDATE_MACROS") then 
+		-- Needed for macros. 
+		self:Update() 
 	elseif (event == "SPELL_UPDATE_ICON") then
 		self:Update() -- really? how often is this called?
 
@@ -481,6 +502,7 @@ ActionButton.Update = function(self)
 	self:UpdateGrid()
 	self:UpdateAutoCast()
 	self:UpdateFlyout()
+	self:UpdateSpellHighlight()
 
 	if self.PostUpdate then 
 		self:PostUpdate()
@@ -757,7 +779,39 @@ ActionButton.UpdateUsable = function(self)
 			self.Icon:SetVertexColor(.3, .3, .3)
 		end
 	end
-end 
+end
+
+ActionButton.ShowOverlayGlow = function(self)
+	if self.SpellHighlight then 
+		local model = self.SpellHighlight.Model
+		local w,h = self:GetSize()
+		if (w and h) then 
+			model:SetSize(w*2,h*2)
+			model:Show()
+		else 
+			model:Hide()
+		end 
+		self.SpellHighlight:Show()
+	end
+end
+
+ActionButton.HideOverlayGlow = function(self)
+	if self.SpellHighlight then 
+		self.SpellHighlight:Hide()
+		self.SpellHighlight.Model:Hide()
+	end
+end
+
+ActionButton.UpdateSpellHighlight = function(self)
+	if self.SpellHighlight then 
+		local spellId = self:GetSpellID()
+		if (spellId and IsSpellOverlayed(spellId)) then
+			self:ShowOverlayGlow()
+		else
+			self:HideOverlayGlow()
+		end
+	end 
+end
 
 -- Getters
 ----------------------------------------------------
@@ -865,11 +919,12 @@ ActionButton.OnEnable = function(self)
 	self:RegisterEvent("PLAYER_TARGET_CHANGED", Update)
 	self:RegisterEvent("SPELL_UPDATE_CHARGES", Update)
 	self:RegisterEvent("SPELL_UPDATE_ICON", Update)
+	self:RegisterEvent("SPELLS_CHANGED", Update)
 	self:RegisterEvent("TRADE_SKILL_CLOSE", Update)
 	self:RegisterEvent("TRADE_SKILL_SHOW", Update)
 	self:RegisterEvent("UPDATE_BINDINGS", Update)
+	self:RegisterEvent("UPDATE_MACROS", Update)
 	self:RegisterEvent("UPDATE_SHAPESHIFT_FORM", Update)
-
 end
 
 ActionButton.OnDisable = function(self)
@@ -895,6 +950,7 @@ ActionButton.OnDisable = function(self)
 	self:UnregisterEvent("TRADE_SKILL_CLOSE", Update)
 	self:UnregisterEvent("TRADE_SKILL_SHOW", Update)
 	self:UnregisterEvent("UPDATE_BINDINGS", Update)
+	self:UnregisterEvent("UPDATE_MACROS", Update)
 	self:UnregisterEvent("UPDATE_SHAPESHIFT_FORM", Update)
 end
 
@@ -1122,6 +1178,32 @@ LibSecureButton.CreateFlyoutArrow = function(self, button)
 	button.FlyoutBorderShadow = button:CreateTexture()
 end 
 
+LibSecureButton.CreateButtonSpellHighlight = function(self, button)
+	local spellHighlight = button:CreateFrame("Frame")
+	spellHighlight:Hide()
+	spellHighlight:SetFrameLevel(button:GetFrameLevel() + 10)
+	button.SpellHighlight = spellHighlight
+
+	local texture = spellHighlight:CreateTexture()
+	texture:SetDrawLayer("ARTWORK", 2)
+	texture:SetAllPoints()
+	texture:SetVertexColor(255/255, 225/255, 125/255, 1)
+	button.SpellHighlight.Texture = texture
+
+	local model = spellHighlight:CreateFrame("PlayerModel")
+	model:Hide()
+	model:SetFrameLevel(button:GetFrameLevel()-1)
+	model:SetPoint("CENTER", 0, 0)
+	model:EnableMouse(false)
+	model:ClearModel()
+	model:SetDisplayInfo(26501) 
+	model:SetCamDistanceScale(3)
+	model:SetPortraitZoom(0)
+	model:SetPosition(0, 0, 0)
+
+	button.SpellHighlight.Model = model
+end
+
 -- Public API
 ----------------------------------------------------
 LibSecureButton.SpawnActionButton = function(self, buttonType, parent, buttonTemplate, ...)
@@ -1163,19 +1245,6 @@ LibSecureButton.SpawnActionButton = function(self, buttonType, parent, buttonTem
 		end
 	]=])
 
-	-- Add a page driver layer, basically a fake bar for the current button
-	-- 
-	-- *Note that the functions meant to check for the various types of bars
-	--  sometimes will return 'false' directly after a page change, when they should be 'true'. 
-	--  No idea as to why this randomly happens, but the macro driver at least responds correctly, 
-	--  and the bar index can still be retrieved correctly, so for now we just skip the checks. 
-	-- 
-	-- Affected functions, which we choose to avoid/work around here: 
-	-- 		HasVehicleActionBar()
-	-- 		HasOverrideActionBar()
-	-- 		HasTempShapeshiftActionBar()
-	-- 		HasBonusActionBar()
-
 	-- Need to figure these out on button creation, 
 	-- as we're not interested in the library owner's name, 
 	-- but rather the addon name of the module calling this method. 
@@ -1183,18 +1252,13 @@ LibSecureButton.SpawnActionButton = function(self, buttonType, parent, buttonTem
 	if self.GetAddon then 
 		local addon = self:GetAddon() 
 		if addon then 
-			-- We're making the addon naming scheme a rule here?
-			-- Seems clunky, but for the time being it'll have to do. 
-			-- Eventually we'll find a better way of implementing this. 
 			if self:GetOwner():IsDebugModeEnabled() then 
 				DEBUG_ENABLED = true 
 			end
-			--if CogWheel("LibModule"):IsAddOnEnabled((addon or "").."_Debug") then 
-			--	DEBUG_ENABLED = true 
-			--end
 		end
 	end
 
+	-- Add a page driver layer, basically a fake bar for the current button
 	local page = visibility:CreateFrame("Frame", nil, "SecureHandlerAttributeTemplate")
 	page.id = barID
 	page.AddDebugMessage = DEBUG_ENABLED and self.AddDebugMessageFormatted or nil
@@ -1210,6 +1274,7 @@ LibSecureButton.SpawnActionButton = function(self, buttonType, parent, buttonTem
 	LibSecureButton:CreateButtonCount(button)
 	LibSecureButton:CreateButtonKeybind(button)
 	LibSecureButton:CreateButtonAutoCast(button)
+	LibSecureButton:CreateButtonSpellHighlight(button)
 	LibSecureButton:CreateFlyoutArrow(button)
 
 	button:RegisterForDrag("LeftButton", "RightButton")
@@ -1334,7 +1399,6 @@ LibSecureButton.SpawnActionButton = function(self, buttonType, parent, buttonTem
 		elseif (playerClass == "WARRIOR") then
 			driver = driver .. "; [bonusbar:1] 7; [bonusbar:2] 8" 
 		end
-		--driver = driver .. "; [form] 1; 1"
 		driver = driver .. "; 1"
 	else 
 		driver = tostring(barID)
@@ -1443,7 +1507,7 @@ LibSecureButton.GetAllActionButtonsByType = function(self, buttonType)
 end 
 
 LibSecureButton.GetActionButtonTooltip = function(self)
-	return LibSecureButton:GetTooltip("CG_ActionButtonTooltip") or LibSecureButton:CreateTooltip("CG_ActionButtonTooltip")
+	return LibSecureButton:GetTooltip("GP_ActionButtonTooltip") or LibSecureButton:CreateTooltip("GP_ActionButtonTooltip")
 end
 
 -- Modules should call this at UPDATE_BINDINGS and the first PLAYER_ENTERING_WORLD

@@ -4,6 +4,153 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.72-RC] 2019-11-20
+### Added
+- Added in group tools with raid icon assignment, ready check and raid/party conversion buttons.
+- Added player PvP titles to unit tooltips.
+
+## [1.0.71-RC] 2019-11-20
+### Fixed
+- The blizzard durability frame should once again be hidden, preventing double up when our own is shown. 
+
+## [1.0.70-RC] 2019-11-16
+### Added
+- Tooltips should now display when units are civilians. Gotta stay clear of those Dishonorable Kills! 
+
+### Changed
+- Adjusted nameplate raid icon position to stop it from colliding with the auras. 
+- Tooltip health values now show a percentage sign when only percentage and not the real health value is available.
+
+## [1.0.69-RC] 2019-11-08
+### Changed
+- The HUD castbar is now anchored to the bottom rather than the center of the screen. It has also been moved farther down, to not be as much in the way.
+- Removed the target level badge for most units. 
+- Added the target's level to its name text, like in the tooltips.
+- Added the small target power crystal for all units that have power. 
+- Changed the small target power crystal to be slightly larger, and slightly more toned down. 
+
+## [1.0.68-RC] 2019-11-07
+
+_**DISCLAIMER:**_  
+_Loss of limbs, life or sanity is not the responsibility of the author._
+
+### Changed
+- There is now a new HUD entry in our options menu, where you can choose to disable the combo point display and the on-screen castbar. 
+- Added a highly experimental feature to work around the Blizzard issue where macro buttons sometimes are missing their info and icon until the macro frame is opened or the interface reloaded. This fix might cause the whole universe to implode, and you're thus installing this at your own risk. 
+
+## [1.0.67-RC] 2019-11-02
+### Fixed
+- Targeted high level hostile players should no longer get a wooden unit frame border, but instead the same spiked stone frame as max level units.
+- Skinnable dead units should once more show that they can be skinned in the tooltips. This applies to both units that can be skinned for leather, as well as herbs or ore. 
+
+## [1.0.66-RC] 2019-10-29
+### Changed
+- Started major reformatting of stylesheet and unitframe styling code structure. First step in changes that eventually will affect the whole addon. 
+- Every time you reach a new reputation standing or experience level and your current value in these are below one percent, the minimap badge tracking these will now show an exclamation mark instead of the non-localized "xp" or "rp" texts they used to show. 
+- Tooltips should now show dead players in spirit form as simply "Dead", not "Corpse". 
+- Tooltips now indicates the rare- or elite status of NPCs much better. 
+
+### Fixed
+- Health numbers and percentages should no longer be visible on critters with the tiny critter unitframe, even if they're above level one. 
+- Changed the way the blizzard gametooltip fonts are set to work around some alignment issues that arose in a recent version.
+- Fixed an issue where the vendor sell price in some cases (e.g. AtlasLoot) would be displayed twice in the same tooltip.
+
+## [1.0.65-RC] 2019-10-28
+### Changed
+- Renamed the whole library system for classic, since some adventurous tinkerers kept mixing files from retail into the classic files, leading to a series of unpredictable issues. 
+- Tooltips should indicate a lot better when a unit is dead now. 
+
+## [1.0.64-RC] 2019-10-27
+### Changed
+- Disable tooltip vendor sell prices when Auctionator or TradeSkillMaster is loaded. More addons will be added to this list. 
+
+### Fixed
+- Fixed a tooltip issue where the wrong object type was assumed. 
+
+## [1.0.63-RC] 2019-10-25
+### Fixed
+- Item tooltips now show the correct vendor sell price for partially full item stacks. 
+
+## [1.0.62-RC] 2019-10-25
+### Added
+- Added vendor sell prices to items when not at a vendor. 
+
+### Changed
+- Mouseover unit tooltips should now be much more similar to our unitframe tooltips.
+- Mouseover tooltips shouldn't have a different scale before and after hovering over a unit anymore. 
+
+### Fixed
+- Fixed some tooltip parsing issues that would use the spell description as the spell cost in some cases where spells had a cost but not a range. 
+
+## [1.0.61-RC] 2019-10-22
+### Fixed
+- Fixed an issue with wrongly named custom events which caused interrupted spellcasts to appear to still be casting. 
+
+## [1.0.60-RC] 2019-10-17
+### Fixed
+- Fixed wrong field name causing a nil bug when channeled player spells were pushed back. 
+
+## [1.0.59-RC] 2019-10-16
+### Added
+- Added in raid frames. Frames can be toggled through the menu, just like the party frames. 
+- Added the first draft of castbars to other units than the player. 
+
+## [1.0.58-RC] 2019-10-13
+- Files have been added, remember to restart the game client! 
+
+### Changed
+- Added some slight filtering to party frame auras to make it easier for healers to heal. 
+
+### Fixed
+- Group frames should now spawn in the correct place after a reload when healer layout was enabled previously. 
+
+## [1.0.57-RC] 2019-10-09
+### Added
+- Now compatible with RealMobHealth. 
+
+## [1.0.56-RC] 2019-10-08
+### Changed
+- Now compatible with Plater Nameplates. 
+
+## [1.0.55-RC] 2019-10-08
+### Added
+- Added in party frames. Might have undiscovered bugs. Frames can be toggled through our menu. 
+- Added the Healer Layout (previously known as Healer Mode) back in, now that we have party frames. This layout switches the positions of the group frames and chat frames, resulting in all friendly unit frames being grouped in the bottom left corner of the screen above the actionbars, making it easier for healers. 
+
+## [1.0.54-RC] 2019-10-08
+- ToC updates. 
+
+## [1.0.53-RC] 2019-10-07
+### Changed
+- Removed the immovable object also known as the Blizzard durability frame, and replaced it with our own that looks exactly the same but has the benefit of actually working without stupid bug messages about mafia anchor connections. Fuck you secure anchoring system.  
+
+## [1.0.52-RC] 2019-09-27
+### Added
+- Added reputation tracking to the minimap ring bars! 
+- Aura tooltips now show the magic school of the aura.
+
+### Changed
+- Aura tooltips no longer show the spellID. You don't need to see that. 
+- Various aura filter tweaks, and the beginning of the Druid aura overhaul in preparation of that. All classes will eventually be covered, and I'm starting with Druid since that is my main and something I currently have direct access to. 
+
+## [1.0.51-RC] 2019-09-25
+### Added
+- Added a right-click menu to the minimap to select tracking when available.
+- Added a tracking button to the minimap. When left-clicked, it displays a menu of the available tracking types, when right-clicked, it disables the current tracking. 
+
+## [1.0.50-RC] 2019-09-23
+### Fixed
+- Slight bug in yesterday's update that caused all auras to sometimes be hidden in combat. Working as intended with this fix. This too is temporary, as I'm currently in the process of overhauling the aura system with parsed combat log information to make it far more functional for Classic. 
+
+## [1.0.49-RC] 2019-09-22
+### Changed
+- Slightly adjusted the player aura filter to be more responsive to combat changes, and to only show long duration buffs in combat when they have 30 seconds or less time remaining before running out. Debuffs are displayed as before. This is not "the final filter", it's just a minor tweak to improve the current for as long as that may remain. 
+
+## [1.0.48-RC] 2019-09-21
+### Changed
+- Healer Mode currently disabled, as it made no sense to switch just the chat around without the group frames. We'll re-introduce this option later once the group frames are in place. 
+- Slightly increased the size of the actionbutton hit rectangles, to make the tooltips feel a bit more responsive when hovering over the buttons. 
+
 ## [1.0.47-RC] 2019-09-18
 ### Changed
 - If Leatrix Maps or Enhanced World Map for WoW Classic is loaded, this addon won't interfere with the World Map anymore.

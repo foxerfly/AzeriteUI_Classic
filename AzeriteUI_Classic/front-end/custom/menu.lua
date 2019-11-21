@@ -1,10 +1,11 @@
 local ADDON, Private = ...
-local Core = CogWheel("LibModule"):GetModule(ADDON)
+local Core = Wheel("LibModule"):GetModule(ADDON)
 if (not Core) then 
 	return 
 end
+
 local Module = Core:NewModule("OptionsMenu", "HIGH", "LibMessage", "LibEvent", "LibDB", "LibFrame", "LibSound", "LibTooltip")
-local Layout, L, MenuTable
+local MenuTable
 
 -- Registries
 Module.buttons = Module.buttons or {}
@@ -24,6 +25,14 @@ local Windows = Module.windows
 local _G = _G
 local math_min = math.min
 local table_insert = table.insert
+
+-- Private API
+local Colors = Private.Colors
+local GetConfig = Private.GetConfig
+local GetLayout = Private.GetLayout
+
+local Layout = GetLayout(ADDON)
+local L = Wheel("LibLocale"):GetLocale(ADDON)
 
 -- Secure script snippets
 local secureSnippets = {
@@ -237,7 +246,7 @@ Toggle.OnEnter = function(self)
 		end 
 		return 
 	end 
-	local r,g,b = Layout.Colors.quest.green[1], Layout.Colors.quest.green[2], Layout.Colors.quest.green[3]
+	local r,g,b = Colors.quest.green[1], Colors.quest.green[2], Colors.quest.green[3]
 	tooltip:SetDefaultAnchor(self)
 
 	if (self.leftButtonTooltip) then
@@ -425,12 +434,12 @@ Button.Update = function(self)
 			return Layout.MenuButton_PostUpdate(self)
 
 		elseif (self.updateType == "SET_VALUE") then 
-			local db = Module:GetConfig(self.optionDB, defaults, "global")
+			local db = GetConfig(self.optionDB)
 			local option = db[self.optionName]
 			return Layout.MenuButton_PostUpdate(self, self.updateType, db, option, option == self.optionArg1)
 
 		elseif (self.updateType == "TOGGLE_VALUE") then 
-			local db = Module:GetConfig(self.optionDB, defaults, "global")
+			local db = GetConfig(self.optionDB)
 			local option = db[self.optionName]
 			return Layout.MenuButton_PostUpdate(self, self.updateType, db, option)
 
@@ -447,18 +456,17 @@ end
 
 Button.FeedToDB = function(self)
 	if (self.updateType == "SET_VALUE") then 
-		Module:GetConfig(self.optionDB, defaults, "global")[self.optionName] = self:GetAttribute("optionValue")
+		GetConfig(self.optionDB)[self.optionName] = self:GetAttribute("optionValue")
 
 	elseif (self.updateType == "TOGGLE_VALUE") then 
-		Module:GetConfig(self.optionDB, defaults, "global")[self.optionName] = self:GetAttribute("optionValue")
+		GetConfig(self.optionDB)[self.optionName] = self:GetAttribute("optionValue")
 	end 
 end 
 
 Button.CreateWindow = function(self, level)
 	local window = Module:CreateConfigWindowLevel(level, self)
-	--window:SetPoint("BOTTOM", Module:GetConfigWindow(), "BOTTOM", 0, 0) -- relative to parent button's window
 	window:ClearAllPoints()
-	window:SetPoint("BOTTOM", self, "BOTTOM", 0, -Layout.MenuButtonSpacing) -- relative to parent button
+	window:SetPoint("BOTTOM", self, "BOTTOM", 0, -Layout.MenuButtonSpacing) 
 	window:SetPoint("RIGHT", self, "LEFT", -Layout.MenuButtonSpacing*2, 0)
 
 	if Layout.MenuWindow_CreateBorder then 
@@ -638,10 +646,10 @@ Module.PostUpdateOptions = function(self, event, ...)
 	if (event) then 
 		self:UnregisterEvent(event, "PostUpdateOptions")
 	end
-	if self.optionCallbacks then 
+	if (self.optionCallbacks) then 
 		for option,window in pairs(self.optionCallbacks) do 
 			if (option.updateType == "SET_VALUE") then
-				local db = self:GetConfig(option.optionDB, defaults, "global")
+				local db = GetConfig(option.optionDB)
 				local value = db[option.optionName]
 
 				if option.proxyModule then 
@@ -654,7 +662,7 @@ Module.PostUpdateOptions = function(self, event, ...)
 				option:Update()
 
 			elseif (option.updateType == "TOGGLE_VALUE") then
-				local db = self:GetConfig(option.optionDB, defaults, "global")
+				local db = GetConfig(option.optionDB)
 				local value = db[option.optionName]
 
 				if option.proxyModule then 
@@ -682,7 +690,7 @@ Module.PostUpdateOptions = function(self, event, ...)
 			end 
 			if (option.isSlave) then 
 				local attributeName = "DB_"..option.slaveDB.."_"..option.slaveKey
-				local db = self:GetConfig(option.slaveDB, defaults, "global")
+				local db = GetConfig(option.slaveDB)
 				local value = db[option.slaveKey]
 
 				window:SetAttribute(attributeName, value)
@@ -716,18 +724,8 @@ Module.CreateMenuTable = function(self)
 		table_insert(DebugMenu.buttons, {
 			enabledTitle = L_ENABLED:format(L["Debug Console"]),
 			disabledTitle = L_DISABLED:format(L["Debug Console"]),
-			--type = "TOGGLE_VALUE", 
-			--configDB = "Core", configKey = "enableDebugConsole", 
-			--proxyModule = nil, useCore = true
 			type = "TOGGLE_MODE", hasWindow = false, 
-			configDB = "Core", modeName = "enableDebugConsole", 
-			proxyModule = nil, useCore = true
-		})
-		table_insert(DebugMenu.buttons, {
-			enabledTitle = L_ENABLED:format(L["Unload Console"]),
-			disabledTitle = L_DISABLED:format(L["Unload Console"]),
-			type = "TOGGLE_MODE", hasWindow = false, 
-			configDB = "Core", modeName = "unloadConsole", 
+			configDB = ADDON, modeName = "enableDebugConsole", 
 			proxyModule = nil, useCore = true
 		})
 	else
@@ -735,7 +733,7 @@ Module.CreateMenuTable = function(self)
 			enabledTitle = L_ENABLED:format(L["Load Console"]),
 			disabledTitle = L_DISABLED:format(L["Load Console"]),
 			type = "TOGGLE_MODE", hasWindow = false, 
-			configDB = "Core", modeName = "loadConsole", 
+			configDB = ADDON, modeName = "loadConsole", 
 			proxyModule = nil, useCore = true
 		})
 	end
@@ -743,7 +741,7 @@ Module.CreateMenuTable = function(self)
 		enabledTitle = L_ENABLED:format(L["Reload UI"]),
 		disabledTitle = L_DISABLED:format(L["Reload UI"]),
 		type = "TOGGLE_MODE", hasWindow = false, 
-		configDB = "Core", modeName = "reloadUI", 
+		configDB = ADDON, modeName = "reloadUI", 
 		proxyModule = nil, useCore = true
 	})
 	table_insert(MenuTable, DebugMenu)
@@ -759,22 +757,22 @@ Module.CreateMenuTable = function(self)
 					buttons = {
 						{
 							title = L["No Extra Buttons"], type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsCount", optionArgs = { 0 }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsCount", optionArgs = { 0 }, 
 							proxyModule = "ActionBarMain"
 						},
 						{
 							title = L["+%.0f Buttons"]:format(5), type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsCount", optionArgs = { 5 }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsCount", optionArgs = { 5 }, 
 							proxyModule = "ActionBarMain"
 						},
 						{
 							title = L["+%.0f Buttons"]:format(11), type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsCount", optionArgs = { 11 }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsCount", optionArgs = { 11 }, 
 							proxyModule = "ActionBarMain"
 						},
 						{
 							title = L["+%.0f Buttons"]:format(17), type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsCount", optionArgs = { 17 }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsCount", optionArgs = { 17 }, 
 							proxyModule = "ActionBarMain"
 						}
 					}
@@ -785,19 +783,19 @@ Module.CreateMenuTable = function(self)
 						{
 							title = L["MouseOver"], 
 							type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsVisibility", optionArgs = { "hover" }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsVisibility", optionArgs = { "hover" }, 
 							proxyModule = "ActionBarMain"
 						},
 						{
 							title = L["MouseOver + Combat"], 
 							type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsVisibility", optionArgs = { "combat" }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsVisibility", optionArgs = { "combat" }, 
 							proxyModule = "ActionBarMain"
 						},
 						{
 							title = L["Always Visible"], 
 							type = "SET_VALUE", 
-							configDB = "ActionBars", configKey = "extraButtonsVisibility", optionArgs = { "always" }, 
+							configDB = "ActionBarMain", configKey = "extraButtonsVisibility", optionArgs = { "always" }, 
 							proxyModule = "ActionBarMain"
 						}
 					}
@@ -806,7 +804,7 @@ Module.CreateMenuTable = function(self)
 					enabledTitle = L_ENABLED:format(L["Cast on Down"]),
 					disabledTitle = L_DISABLED:format(L["Cast on Down"]),
 					type = "TOGGLE_VALUE", hasWindow = false, 
-					configDB = "ActionBars", configKey = "castOnDown", 
+					configDB = "ActionBarMain", configKey = "castOnDown", 
 					proxyModule = "ActionBarMain"
 				}
 			}
@@ -826,11 +824,49 @@ Module.CreateMenuTable = function(self)
 			enabledTitle = L_ENABLED:format(L["Button Lock"]),
 			disabledTitle = L_DISABLED:format(L["Button Lock"]),
 			type = "TOGGLE_VALUE", hasWindow = false, 
-			configDB = "ActionBars", configKey = "buttonLock", 
+			configDB = "ActionBarMain", configKey = "buttonLock", 
 			proxyModule = "ActionBarMain"
 		})
 		table_insert(MenuTable, ActionBarMenu)
 	end
+
+	-- Nameplates
+	local NamePlates = Core:GetModule("NamePlates", true)
+	if NamePlates and not (NamePlates:IsIncompatible() or NamePlates:DependencyFailed()) then 
+		table_insert(MenuTable, {
+			title = L["NamePlates"], type = nil, hasWindow = true, 
+			buttons = {
+				-- Disable player auras
+				{
+					enabledTitle = L_ENABLED:format(L["Auras"]),
+					disabledTitle = L_DISABLED:format(L["Auras"]),
+					type = "TOGGLE_VALUE", 
+					configDB = "NamePlates", configKey = "enableAuras", 
+					proxyModule = "NamePlates"
+				},
+				-- Click-through settings
+				{
+					title = MAKE_UNINTERACTABLE, type = nil, hasWindow = true, 
+					buttons = {
+						{
+							enabledTitle = L_ENABLED:format(L["Enemies"]),
+							disabledTitle = L_DISABLED:format(L["Enemies"]),
+							type = "TOGGLE_VALUE", 
+							configDB = "NamePlates", configKey = "clickThroughEnemies", 
+							proxyModule = "NamePlates"
+						},
+						{
+							enabledTitle = L_ENABLED:format(L["Friends"]),
+							disabledTitle = L_DISABLED:format(L["Friends"]),
+							type = "TOGGLE_VALUE", 
+							configDB = "NamePlates", configKey = "clickThroughFriends", 
+							proxyModule = "NamePlates"
+						}
+					}
+				}
+			}
+		})
+	end 
 
 	-- Unitframes
 	local UnitFrameMenu = {
@@ -861,51 +897,35 @@ Module.CreateMenuTable = function(self)
 			proxyModule = "UnitFrameRaid"
 		})
 	end
+	table_insert(MenuTable, UnitFrameMenu)
 
-	-- Nameplates
-	local NamePlates = Core:GetModule("NamePlates", true)
-	if NamePlates and not (NamePlates:IsIncompatible() or NamePlates:DependencyFailed()) then 
-		table_insert(MenuTable, {
-			title = L["NamePlates"], type = nil, hasWindow = true, 
+	-- HUD
+	local UnitFramePlayerHUD = Core:GetModule("UnitFramePlayerHUD", true)
+	if UnitFramePlayerHUD and not (UnitFramePlayerHUD:IsIncompatible() or UnitFramePlayerHUD:DependencyFailed()) then 
+		local HUDMenu = {
+			title = L["HUD"], type = nil, hasWindow = true, 
 			buttons = {
-				-- Disable player auras
 				{
-					enabledTitle = L_ENABLED:format(L["Auras"]),
-					disabledTitle = L_DISABLED:format(L["Auras"]),
+					enabledTitle = L_ENABLED:format(L["CastBar"]),
+					disabledTitle = L_DISABLED:format(L["CastBar"]),
 					type = "TOGGLE_VALUE", 
-					configDB = "NamePlates", configKey = "enableAuras", 
-					proxyModule = "NamePlates"
-				},
-				-- Click-through settings
-				{
-					title = MAKE_UNINTERACTABLE, type = nil, hasWindow = true, 
-					buttons = {
-						{
-							enabledTitle = L_ENABLED:format(L["Player"]),
-							disabledTitle = L_DISABLED:format(L["Player"]),
-							type = "TOGGLE_VALUE", 
-							configDB = "NamePlates", configKey = "clickThroughSelf", 
-							proxyModule = "NamePlates"
-						},
-						{
-							enabledTitle = L_ENABLED:format(L["Enemies"]),
-							disabledTitle = L_DISABLED:format(L["Enemies"]),
-							type = "TOGGLE_VALUE", 
-							configDB = "NamePlates", configKey = "clickThroughEnemies", 
-							proxyModule = "NamePlates"
-						},
-						{
-							enabledTitle = L_ENABLED:format(L["Friends"]),
-							disabledTitle = L_DISABLED:format(L["Friends"]),
-							type = "TOGGLE_VALUE", 
-							configDB = "NamePlates", configKey = "clickThroughFriends", 
-							proxyModule = "NamePlates"
-						}
-					}
+					configDB = "UnitFramePlayerHUD", configKey = "enableCast", 
+					proxyModule = "UnitFramePlayerHUD"
 				}
 			}
-		})
-	end 
+		}
+		-- Only insert this entry if SimpleClassPower isn't loaded. 
+		if (not self:IsAddOnEnabled("SimpleClassPower")) then 
+			table_insert(HUDMenu.buttons, {
+				enabledTitle = L_ENABLED:format(L["ClassPower"]),
+				disabledTitle = L_DISABLED:format(L["ClassPower"]),
+				type = "TOGGLE_VALUE", 
+				configDB = "UnitFramePlayerHUD", configKey = "enableClassPower", 
+				proxyModule = "UnitFramePlayerHUD"
+			})
+		end
+		table_insert(MenuTable, HUDMenu)
+	end
 
 	-- Explorer Mode
 	local ExplorerMode = Core:GetModule("ExplorerMode", true)
@@ -932,21 +952,15 @@ Module.CreateMenuTable = function(self)
 		})
 	end 
 
-	-- Healer Mode
+	-- Healer Layout
 	table_insert(MenuTable, {
 		enabledTitle = L_ENABLED:format(L["Healer Mode"]),
 		disabledTitle = L_DISABLED:format(L["Healer Mode"]),
 		type = "TOGGLE_VALUE", 
-		configDB = "Core", configKey = "enableHealerMode", 
+		configDB = ADDON, configKey = "enableHealerMode", 
 		proxyModule = nil, useCore = true, modeName = "healerMode"
 	})
 
-end
-
-Module.PreInit = function(self)
-	local PREFIX = Core:GetPrefix()
-	Layout = CogWheel("LibDB"):GetDatabase(PREFIX..":[Core]")
-	L = CogWheel("LibLocale"):GetLocale(PREFIX)
 end
 
 Module.OnInit = function(self)

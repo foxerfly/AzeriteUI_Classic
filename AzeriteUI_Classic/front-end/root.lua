@@ -1,7 +1,7 @@
 local ADDON, Private = ...
 
 -- Wooh! 
-local Core = CogWheel("LibModule"):NewModule(ADDON, "LibDB", "LibMessage", "LibEvent", "LibBlizzard", "LibFrame", "LibSlash", "LibSwitcher", "LibAura")
+local Core = Wheel("LibModule"):NewModule(ADDON, "LibDB", "LibMessage", "LibEvent", "LibBlizzard", "LibFrame", "LibSlash", "LibSwitcher", "LibAura")
 
 -- Tell the back-end what addon to look for before 
 -- initializing this module and all its submodules. 
@@ -34,32 +34,14 @@ local SetActionBarToggles = _G.SetActionBarToggles
 
 -- Private Addon API
 local GetAuraFilterFunc = Private.GetAuraFilterFunc
+local GetConfig = Private.GetConfig
 local GetFont = Private.GetFont
+local GetLayout = Private.GetLayout
 local GetMedia = Private.GetMedia
 local Colors = Private.Colors
 
 -- Addon localization
-local L = CogWheel("LibLocale"):GetLocale(ADDON)
-
--- Addon defaults
-local defaults = {
-	-- Enables a layout switch targeted towards healers
-	enableHealerMode = false,
-
-	-- Loads all child modules with debug functionality, 
-	-- doesn't actually load any consoles. 
-	loadDebugConsole = true, 
-
-	-- Enable console visibility. 
-	-- Requires the above to be true. 
-	enableDebugConsole = false,
-
-	-- Block group invite spam
-	blockGroupInvites = false, 
-	allowGuildInvites = true,
-	allowFriendInvites = true, 
-	blockCounter = {}
-}
+local L = Wheel("LibLocale"):GetLocale(ADDON)
 
 local SECURE = {
 	HealerMode_SecureCallback = [=[
@@ -123,6 +105,22 @@ local fixMinimap = function()
 			Minimap_ZoomInClick()
 		end 
 	end 
+end
+
+local alreadyFixed
+local fixMacroIcons = function() 
+	if InCombatLockdown() or alreadyFixed then 
+		return 
+	end
+	--  Macro slot index to query. Slots 1 through 120 are general macros; 121 through 138 are per-character macros.
+	local numAccountMacros, numCharacterMacros = GetNumMacros()
+	for macroSlot = 1,138 do 
+		local name, icon, body, isLocal = GetMacroInfo(macroSlot) 
+		if body then 
+			EditMacro(macroSlot, nil, nil, body)
+			alreadyFixed = true
+		end
+	end
 end
 
 Core.IsModeEnabled = function(self, modeName)
@@ -228,13 +226,11 @@ Core.UpdateDebugConsole = function(self)
 end
 
 Core.LoadDebugConsole = function(self)
-	--EnableAddOn(ADDON .. "_Debug", true)
 	self.db.loadDebugConsole = true
 	ReloadUI()
 end
 
 Core.UnloadDebugConsole = function(self)
-	--DisableAddOn(ADDON .. "_Debug", true)
 	self.db.loadDebugConsole = false
 	ReloadUI()
 end
@@ -300,10 +296,10 @@ Core.ApplyExperimentalFeatures = function(self)
 
 	-- Add command to /clear the main chatframe
 	self:RegisterChatCommand("clear", function() ChatFrame1:Clear() end)
+	self:RegisterChatCommand("fix", fixMacroIcons)
 end
 
 -- We could add this into the back-end, leaving it here for now, though. 
--- It's not like this addon actually serves any other purpose. 
 Core.OnChatCommand = function(self, editBox, msg)
 	if (msg == "enable") or (msg == "on") then 
 		self.db.enableDebugConsole = true
@@ -316,8 +312,8 @@ Core.OnChatCommand = function(self, editBox, msg)
 end
 
 Core.OnInit = function(self)
-	self.db = self:NewConfig("Core", defaults, "global")
-	self.layout = CogWheel("LibDB"):GetDatabase(self:GetPrefix()..":[Core]")
+	self.db = GetConfig(ADDON)
+	self.layout = GetLayout(ADDON)
 
 	-- Hide the entire UI from the start
 	if self.layout.FadeInUI then 
@@ -335,8 +331,12 @@ Core.OnInit = function(self)
 	-- Force-initialize the secure callback system for the menu
 	self:GetSecureUpdater()
 
-	-- Fire a startup message into the console, if the debug addon is enabled.
-	if self.db.loadDebugConsole then 
+	-- Let's just enforce this from now on.
+	-- I need it to be there, it doesn't affect performance.
+	self.db.loadDebugConsole = true 
+
+	-- Fire a startup message into the console.
+	if (self.db.loadDebugConsole) then 
 
 		-- Set the flag to tell the back-end we're in debug mode
 		self:EnableDebugMode()
@@ -413,7 +413,7 @@ Core.OnEnable = function(self)
 
 	-- Listen for when the user closes the debugframe directly
 	------------------------------------------------------------------------------------
-	self:RegisterMessage("CG_DEBUG_FRAME_CLOSED", "OnEvent")
+	self:RegisterMessage("GP_DEBUG_FRAME_CLOSED", "OnEvent")
 end 
 
 Core.OnEvent = function(self, event, ...)
@@ -431,6 +431,7 @@ Core.OnEvent = function(self, event, ...)
 				if (self.elapsed < 1/60) then 
 					return 
 				end 
+				fixMacroIcons()
 				if self.fading then 
 					self.totalElapsed = self.totalElapsed + self.elapsed
 					self.alpha = self.totalElapsed / self.fadeDuration
@@ -443,6 +444,7 @@ Core.OnEvent = function(self, event, ...)
 						self.fading = nil
 						self:SetScript("OnUpdate", nil)
 						fixMinimap()
+						fixMacroIcons()
 						return 
 					else 
 						Core:GetFrame("UICenter"):SetAlpha(self.alpha)
@@ -468,11 +470,10 @@ Core.OnEvent = function(self, event, ...)
 			end
 			self:GetFrame("UICenter"):SetAlpha(0)
 		end
-	elseif (event == "CG_DEBUG_FRAME_CLOSED") then 
+	elseif (event == "GP_DEBUG_FRAME_CLOSED") then 
 		-- This fires from the module back-end when 
 		-- the debug console was manually closed by the user.
 		-- We need to update our saved setting here.
 		self.db.enableDebugConsole = false
 	end 
 end 
-

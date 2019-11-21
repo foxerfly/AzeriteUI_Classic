@@ -1,15 +1,15 @@
-local LibScale = CogWheel:Set("LibScale", 1)
+local LibScale = Wheel:Set("LibScale", 1)
 if (not LibScale) then	
 	return
 end
 
-local LibMessage = CogWheel("LibMessage")
+local LibMessage = Wheel("LibMessage")
 assert(LibMessage, "LibScale requires LibMessage to be loaded.")
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibScale requires LibEvent to be loaded.")
 
-local LibHook = CogWheel("LibHook")
+local LibHook = Wheel("LibHook")
 assert(LibHook, "LibScale requires LibHook to be loaded.")
 
 -- Embed event functionality into this
@@ -112,10 +112,10 @@ end
 
 LibScale.OnEvent = function(self, event, ...)
 	if self:UpdateWorldScales() then 
-		self:SendMessage("CG_WORLD_SCALE_UPDATE")
+		self:SendMessage("GP_WORLD_SCALE_UPDATE")
 	end 
 	if self:UpdateInterfaceScales() then 
-		self:SendMessage("CG_INTERFACE_SCALE_UPDATE")
+		self:SendMessage("GP_INTERFACE_SCALE_UPDATE")
 	end 
 end
 

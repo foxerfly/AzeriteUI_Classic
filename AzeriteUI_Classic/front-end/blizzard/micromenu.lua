@@ -1,5 +1,5 @@
-local ADDON = ...
-local Core = CogWheel("LibModule"):GetModule(ADDON)
+local ADDON,Private = ...
+local Core = Wheel("LibModule"):GetModule(ADDON)
 if (not Core) then 
 	return 
 end
@@ -22,10 +22,15 @@ local GetFramerate = _G.GetFramerate
 local GetMovieDownloadProgress = _G.GetMovieDownloadProgress
 local GetNetStats = _G.GetNetStats
 
+-- Private API
+local Colors = Private.Colors
+local GetLayout = Private.GetLayout
+
 local BLANK_TEXTURE = [[Interface\ChatFrame\ChatFrameBackground]]
 local buttonWidth, buttonHeight, buttonSpacing, sizeMod = 300,50,10, .75
 
-local L, Layout, CoreLayout
+local L = Wheel("LibLocale"):GetLocale(ADDON)
+local Layout = GetLayout(Module:GetName())
 
 local getBindingKeyForAction = function(action, useNotBound, useParentheses)
 	local key = GetBindingKey(action)
@@ -132,13 +137,13 @@ local microButtonScripts = {
 	
 			if (not self:IsEnabled()) then
 				if (self.factionGroup == "Neutral") then
-					tooltip:AddLine(FEATURE_NOT_AVAILBLE_PANDAREN, Layout.Colors.quest.red[1], Layout.Colors.quest.red[2], Layout.Colors.quest.red[3], true)
+					tooltip:AddLine(FEATURE_NOT_AVAILBLE_PANDAREN, Colors.quest.red[1], Colors.quest.red[2], Colors.quest.red[3], true)
 	
 				elseif ( self.minLevel ) then
-					tooltip:AddLine(string_format(FEATURE_BECOMES_AVAILABLE_AT_LEVEL, self.minLevel), Layout.Colors.quest.red[1], Layout.Colors.quest.red[2], Layout.Colors.quest.red[3], true)
+					tooltip:AddLine(string_format(FEATURE_BECOMES_AVAILABLE_AT_LEVEL, self.minLevel), Colors.quest.red[1], Colors.quest.red[2], Colors.quest.red[3], true)
 	
 				elseif ( self.disabledTooltip ) then
-					tooltip:AddLine(self.disabledTooltip, Layout.Colors.quest.red[1], Layout.Colors.quest.red[2], Layout.Colors.quest.red[3], true)
+					tooltip:AddLine(self.disabledTooltip, Colors.quest.red[1], Colors.quest.red[2], Colors.quest.red[3], true)
 				end
 			end
 
@@ -218,7 +223,7 @@ Module.GetConfigWindow = function(self)
 		configWindow:Hide()
 		configWindow:SetFrameStrata("DIALOG")
 		configWindow:SetFrameLevel(1000)
-		configWindow:Place(unpack(CoreLayout.MenuPlace))
+		configWindow:Place(unpack(GetLayout(ADDON).MenuPlace))
 		configWindow:EnableMouse(true)
 		configWindow:SetScript("OnShow", ConfigWindow_OnShow)
 		configWindow:SetScript("OnHide", ConfigWindow_OnHide)
@@ -411,13 +416,6 @@ Module.OnEvent = function(self, event, ...)
 		self:UnregisterEvent("PLAYER_REGEN_ENABLED", "OnEvent")
 		self:UpdateMicroButtons()
 	end 
-end
-
-Module.PreInit = function(self)
-	local PREFIX = Core:GetPrefix()
-	L = CogWheel("LibLocale"):GetLocale(PREFIX)
-	Layout = CogWheel("LibDB"):GetDatabase(PREFIX..":[BlizzardMicroMenu]")
-	CoreLayout = CogWheel("LibDB"):GetDatabase(PREFIX..":[Core]")
 end
 
 Module.HandleBartenderMicroBar = function(self)

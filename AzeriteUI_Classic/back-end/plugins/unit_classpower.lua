@@ -1,4 +1,4 @@
-local LibFrame = CogWheel("LibFrame")
+local LibFrame = Wheel("LibFrame")
 assert(LibFrame, "ClassPower requires LibFrame to be loaded.")
 
 -- Lua API
@@ -166,7 +166,7 @@ local Generic = setmetatable({
 					if point.bg then 
 						point.bg:SetVertexColor(r*1/3, g*1/3, b*1/3)
 					end 
-					local alpha = UnitAffectingCombat(unit) and 1 or element.alphaNoCombat
+					local alpha = UnitAffectingCombat("player") and 1 or element.alphaNoCombat
 					if (i > min) and (element.alphaEmpty) then
 						point:SetAlpha(element.alphaEmpty * alpha)
 					else 
@@ -408,6 +408,6 @@ local Disable = function(self)
 end 
 
 -- Register it with compatible libraries
-for _,Lib in ipairs({ (CogWheel("LibUnitFrame", true)), (CogWheel("LibNamePlate", true)) }) do 
-	Lib:RegisterElement("ClassPower", Enable, Disable, Proxy, 33)
+for _,Lib in ipairs({ (Wheel("LibUnitFrame", true)), (Wheel("LibNamePlate", true)) }) do 
+	Lib:RegisterElement("ClassPower", Enable, Disable, Proxy, 34)
 end 

@@ -1,29 +1,29 @@
-local Version = 41 -- This library's version 
+local Version = 42 -- This library's version 
 local MapVersion = Version -- Minimap library version the minimap created by this is compatible with
-local LibMinimap, OldVersion = CogWheel:Set("LibMinimap", Version)
+local LibMinimap, OldVersion = Wheel:Set("LibMinimap", Version)
 if (not LibMinimap) then
 	return
 end
 
-local LibClientBuild = CogWheel("LibClientBuild")
+local LibClientBuild = Wheel("LibClientBuild")
 assert(LibClientBuild, "LibMinimap requires LibClientBuild to be loaded.")
 
-local LibMessage = CogWheel("LibMessage")
+local LibMessage = Wheel("LibMessage")
 assert(LibMessage, "LibMinimap requires LibMessage to be loaded.")
 
-local LibEvent = CogWheel("LibEvent")
+local LibEvent = Wheel("LibEvent")
 assert(LibEvent, "LibMinimap requires LibEvent to be loaded.")
 
-local LibFrame = CogWheel("LibFrame")
+local LibFrame = Wheel("LibFrame")
 assert(LibFrame, "LibMinimap requires LibFrame to be loaded.")
 
-local LibSound = CogWheel("LibSound")
+local LibSound = Wheel("LibSound")
 assert(LibSound, "LibMinimap requires LibSound to be loaded.")
 
-local LibTooltip = CogWheel("LibTooltip")
+local LibTooltip = Wheel("LibTooltip")
 assert(LibTooltip, "LibMinimap requires LibTooltip to be loaded.")
 
-local LibHook = CogWheel("LibHook")
+local LibHook = Wheel("LibHook")
 assert(LibHook, "LibMinimap requires LibHook to be loaded.")
 
 -- Embed library functionality into this
@@ -377,7 +377,7 @@ end
 
 -- Return or create the library default tooltip
 ElementHandler.GetTooltip = function(proxy)
-	return LibMinimap:GetTooltip("CG_MinimapTooltip") or LibMinimap:CreateTooltip("CG_MinimapTooltip")
+	return LibMinimap:GetTooltip("GP_MinimapTooltip") or LibMinimap:CreateTooltip("GP_MinimapTooltip")
 end
 
 ElementHandler.EnableAllElements = function(proxy)
@@ -428,8 +428,8 @@ LibMinimap.SyncMinimap = function(self, onlyQuery)
 	Private.MapVisibility = Private.MapVisibility or Private.MapParent:CreateFrame("Frame")
 	Private.MapVisibility:SetFrameStrata("LOW")
 	Private.MapVisibility:SetFrameLevel(0)
-	Private.MapVisibility:SetScript("OnHide", function() LibMinimap:SendMessage("CG_MINIMAP_VISIBILITY_CHANGED", false) end)
-	Private.MapVisibility:SetScript("OnShow", function() LibMinimap:SendMessage("CG_MINIMAP_VISIBILITY_CHANGED", true) end)
+	Private.MapVisibility:SetScript("OnHide", function() LibMinimap:SendMessage("GP_MINIMAP_VISIBILITY_CHANGED", false) end)
+	Private.MapVisibility:SetScript("OnShow", function() LibMinimap:SendMessage("GP_MINIMAP_VISIBILITY_CHANGED", true) end)
 
 	-- Holder frame deciding the position and size of the minimap. 
 	Private.MapHolder = Private.MapHolder or Private.MapVisibility:CreateFrame("Frame")
@@ -500,8 +500,8 @@ LibMinimap.SyncMinimap = function(self, onlyQuery)
 	-- Hook minimap visibility changes
 	-- Use a unique hook identifier to prevent multiple library instances 
 	-- from registering multiple hooks. We only need one. 
-	LibMinimap:SetHook(Private.OldMinimap, "OnHide", function() Private.MapVisibility:Hide() end, "CG_MINIMAP_HIDE")
-	LibMinimap:SetHook(Private.OldMinimap, "OnShow", function() Private.MapVisibility:Show() end, "CG_MINIMAP_SHOW")
+	LibMinimap:SetHook(Private.OldMinimap, "OnHide", function() Private.MapVisibility:Hide() end, "GP_MINIMAP_HIDE")
+	LibMinimap:SetHook(Private.OldMinimap, "OnShow", function() Private.MapVisibility:Show() end, "GP_MINIMAP_SHOW")
 
 	-- keep these two disabled
 	-- or the map will change position 
@@ -704,7 +704,7 @@ end
 
 -- Return or create the library default tooltip
 LibMinimap.GetMinimapTooltip = function(self)
-	return self:GetTooltip("CG_MinimapTooltip") or self:CreateTooltip("CG_MinimapTooltip")
+	return self:GetTooltip("GP_MinimapTooltip") or self:CreateTooltip("GP_MinimapTooltip")
 end
 
 LibMinimap.RemoveButton = function(self, button)
@@ -807,7 +807,22 @@ LibMinimap.OnUpdate = function(_, elapsed)
 
 		-- Don't really need to check for this very often
 		-- It's not a problem that the user see the buttons disappear
-		self.longTimer = 5
+		if (self.enableLongTimerCount) then 
+			self.longTimer = 5
+		else 
+			-- Add a little system to check frequently for the first 5 seconds, 
+			-- then activate the throttled system to save resources. 
+			self.longTimer = .1
+			if (not self.longTimerCount) then 
+				self.longTimerCount = 1
+			else 
+				self.longTimerCount = self.longTimerCount + 1
+			end 
+			if (self.longTimerCount > 50) then 
+				self.enableLongTimerCount = true
+				self.longTimerCount = nil
+			end
+		end
 	end 
 end
 
