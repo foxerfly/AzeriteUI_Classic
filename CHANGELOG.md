@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.79-RC] 2019-12-11
+### Fixed
+- Both the Minimap button and BG entry popup should work... better, now. 
+
+### Removed
+- Removed the popup styling. It's problematic right now.
+
+## [1.0.78-RC] 2019-12-11
+### Fixed
+- Fixed spam filter issues. Clearly chat events have changed since I was a young noob. Luckily this older noob figured it out.
+
+## [1.0.77-RC] 2019-12-11
+### Changed
+- Only apply our spam removal to system messages. That should be the correct message group.
+
+## [1.0.76-RC] 2019-12-11
+### Added
+- Added the Minimap Battlefield button. We're using our green groupfinder eye from the retail version of this addon.
+- Added a minor chat filter to remove the "You're not in a raid group" spam that keeps happening within Battlegrounds. Cause can be other addons, but for now we're just filtering it out.
+
+### Changed
+- Slightly re-aligned the Minimap tracking button to make a little room for the new Battlefield button.
+- Added back the Minimap blip textures, as they appear to be more or less unchanged from the previous patch.
+
+### Fixed
+- The Blizzard static popups will no longer be repositioned by us to accomodate our styling of them, as this was causing taint with the new Battleground popups, making the enter button unclickable. This change might cause some graphical overlap in situations with two popups visible at once, though this should be purely visual and not affect the ability to click the buttons. We'll come up with better styling soon. 
+
+## [1.0.75-RC] 2019-12-11
+### Added
+- Added the keyring button to the backpack.
+- Added in some groundwork for a couple of upcoming features.
+
+### Changed
+- Updated the TOC version to WoW Client Patch 1.13.3.
+- Adjusted statusbar code to avoid a very subtle wobbling that nobody but me seem to have noticed.
+
+## [1.0.74-RC] 2019-12-04
+### Fixed
+- The chat window position should once again instantly update without needing to reload when the Healer Layout is toggled in the menu.
+
+## [1.0.73-RC] 2019-11-29
+### Added
+- Added back Blizzard's `/stopwatch` command. The stopwatch exists in Classic, so why not?
+
+### Changed
+- Left-Clicking the clock now toggles the stopwatch.
+- Casts should no longer appear to continue after the unit has died.
+
 ## [1.0.72-RC] 2019-11-20
 ### Added
 - Added in group tools with raid icon assignment, ready check and raid/party conversion buttons.

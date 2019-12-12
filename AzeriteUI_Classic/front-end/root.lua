@@ -1,7 +1,7 @@
 local ADDON, Private = ...
 
 -- Wooh! 
-local Core = Wheel("LibModule"):NewModule(ADDON, "LibDB", "LibMessage", "LibEvent", "LibBlizzard", "LibFrame", "LibSlash", "LibSwitcher", "LibAura")
+local Core = Wheel("LibModule"):NewModule(ADDON, "LibDB", "LibMessage", "LibEvent", "LibBlizzard", "LibFrame", "LibSlash", "LibSwitcher", "LibAuraData")
 
 -- Tell the back-end what addon to look for before 
 -- initializing this module and all its submodules. 
@@ -19,6 +19,9 @@ local _G = _G
 local ipairs = ipairs
 local string_find = string.find
 local string_format = string.format
+local string_lower = string.lower
+local string_match = string.match
+local tonumber = tonumber
 
 -- WoW API
 local BNGetFriendGameAccountInfo = _G.BNGetFriendGameAccountInfo
@@ -170,7 +173,7 @@ Core.GetSecureUpdater = function(self)
 
 		-- Lua callback to proxy the setting to the chat window module. 
 		callbackFrame.OnModeToggle = function(callbackFrame)
-			for i,moduleName in ipairs({ "ChatWindows" }) do 
+			for i,moduleName in ipairs({ "BlizzardChatFrames" }) do 
 				local module = self:GetModule(moduleName, true)
 				if module and not (module:IsIncompatible() or module:DependencyFailed()) then 
 					if (module.OnModeToggle) then 
@@ -239,13 +242,13 @@ Core.ApplyExperimentalFeatures = function(self)
 
 	-- Attempt to hook the bag bar to the bags
 	-- Retrieve the first slot button and the backpack
-	local firstSlot = _G.CharacterBag0Slot
-	local backpack = _G.ContainerFrame1
+	local firstSlot = CharacterBag0Slot
+	local backpack = ContainerFrame1
 
 	-- These should always exist, but Blizz do have a way of changing things,
 	-- and I prefer having functionality not be applied in a future update 
 	-- rather than having the UI break from nil bugs. 
-	if firstSlot and backpack then 
+	if (firstSlot and backpack) then 
 		firstSlot:ClearAllPoints()
 		firstSlot:SetPoint("TOPRIGHT", backpack, "BOTTOMRIGHT", -6, 0)
 
@@ -282,6 +285,17 @@ Core.ApplyExperimentalFeatures = function(self)
 				previous = slot
 			end 
 		end 
+
+		local keyring = KeyRingButton
+		if (keyring) then 
+			keyring:SetParent(backpack)
+			keyring:SetHeight(slotSize) 
+			keyring:SetFrameStrata(strata)
+			keyring:SetFrameLevel(level)
+			keyring:ClearAllPoints()
+			keyring:SetPoint("RIGHT", previous, "LEFT", 0, 0)
+			previous = keyring
+		end
 	end 
 
 	-- Register addon specific aura filters.
@@ -294,9 +308,92 @@ Core.ApplyExperimentalFeatures = function(self)
 		end 
 	end
 
-	-- Add command to /clear the main chatframe
+	local commands = {
+		SLASH_STOPWATCH_PARAM_PLAY1 = "play",
+		SLASH_STOPWATCH_PARAM_PLAY2 = "play",
+		SLASH_STOPWATCH_PARAM_PAUSE1 = "pause",
+		SLASH_STOPWATCH_PARAM_PAUSE2 = "pause",
+		SLASH_STOPWATCH_PARAM_STOP1 = "stop",
+		SLASH_STOPWATCH_PARAM_STOP2 = "clear",
+		SLASH_STOPWATCH_PARAM_STOP3 = "reset",
+		SLASH_STOPWATCH_PARAM_STOP4 = "stop",
+		SLASH_STOPWATCH_PARAM_STOP5 = "clear",
+		SLASH_STOPWATCH_PARAM_STOP6 = "reset"
+	}
+
+	-- try to match a command
+	local matchCommand = function(param, text)
+		local i, compare
+		i = 1
+		repeat
+			compare = commands[param..i]
+			if (compare and compare == text) then
+				return true
+			end
+			i = i + 1
+		until (not compare)
+		return false
+	end
+
+	local stopWatch = function(_,msg)
+		if (not IsAddOnLoaded("Blizzard_TimeManager")) then
+			UIParentLoadAddOn("Blizzard_TimeManager")
+		end
+		if (StopwatchFrame) then
+			local text = string_match(msg, "%s*([^%s]+)%s*")
+			if (text) then
+				text = string_lower(text)
+	
+				-- in any of the following cases, the stopwatch will be shown
+				StopwatchFrame:Show()
+	
+				if (matchCommand("SLASH_STOPWATCH_PARAM_PLAY", text)) then
+					Stopwatch_Play()
+					return
+				end
+				if (matchCommand("SLASH_STOPWATCH_PARAM_PAUSE", text)) then
+					Stopwatch_Pause()
+					return
+				end
+				if (matchCommand("SLASH_STOPWATCH_PARAM_STOP", text)) then
+					Stopwatch_Clear()
+					return
+				end
+				-- try to match a countdown
+				-- kinda ghetto, but hey, it's simple and it works =)
+				local hour, minute, second = string_match(msg, "(%d+):(%d+):(%d+)")
+				if (not hour) then
+					minute, second = string_match(msg, "(%d+):(%d+)")
+					if (not minute) then
+						second = string_match(msg, "(%d+)")
+					end
+				end
+				Stopwatch_StartCountdown(tonumber(hour), tonumber(minute), tonumber(second))
+			else
+				Stopwatch_Toggle()
+			end
+		end
+	end
+
 	self:RegisterChatCommand("clear", function() ChatFrame1:Clear() end)
 	self:RegisterChatCommand("fix", fixMacroIcons)
+	self:RegisterChatCommand("stopwatch", stopWatch)
+
+	-- Little trick to show the layout and dimensions
+	-- of the Minimap blip icons on-screen in-game, 
+	-- whenever blizzard decide to update those. 
+	
+	-- By setting a single point, but not any sizes, 
+	-- the texture is shown in its original size and dimensions!
+	--local f = UIParent:CreateTexture()
+	--f:SetTexture([[Interface\MiniMap\ObjectIconsAtlas.blp]])
+	--f:SetPoint("CENTER")
+
+	-- Add a little backdrop for easy
+	-- copy & paste from screenshots!
+	--local g = UIParent:CreateTexture()
+	--g:SetColorTexture(0,.7,0,.25)
+	--g:SetAllPoints(f)
 end
 
 -- We could add this into the back-end, leaving it here for now, though. 
