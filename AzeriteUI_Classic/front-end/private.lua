@@ -35,7 +35,7 @@ local auraInfoFlags = Wheel("LibAuraData"):GetAllAuraInfoFlags() -- Aura info fl
 local auraUserFlags = {} -- Aura filter flags 
 local auraFilters = {} -- Aura filter functions
 local colorDB = {} -- Addon color schemes
-local fontsDB = { normal = {}, outline = {} } -- Addon fonts
+local fontsDB = { normal = {}, outline = {}, chatNormal = {}, chatOutline = {} } -- Addon fonts
 
 -- List of units we all count as the player
 local unitIsPlayer = { player = true, 	pet = true }
@@ -106,10 +106,18 @@ do
 		local fontNormal = _G[fontPrefix .. "Font" .. i]
 		if fontNormal then 
 			fontsDB.normal[i] = fontNormal
-		end 
+		end
 		local fontOutline = _G[fontPrefix .. "Font" .. i .. "_Outline"]
 		if fontOutline then 
 			fontsDB.outline[i] = fontOutline
+		end
+		local fontChatNormal = _G[fontPrefix .. "ChatFont" .. i]
+		if fontChatNormal then 
+			fontsDB.chatNormal[i] = fontChatNormal
+		end
+		local fontChatOutline = _G[fontPrefix .. "ChatFont" .. i .. "_Outline"]
+		if fontChatOutline then 
+			fontsDB.chatOutline[i] = fontChatOutline
 		end 
 	end 
 end 
@@ -392,9 +400,13 @@ end
 
 auraFilters.nameplate = function(element, isBuff, unit, isOwnedByPlayer, name, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossDebuff, isCastByPlayer, nameplateShowAll, timeMod, value1, value2, value3)
 
+	local all = element.all
 	local hasFlags = not not GetUserFlags(Private)[spellID]
 	if (hasFlags) then 
-	end
+		if (HasUserFlags(Private, spellID, NeverOnPlate)) then 
+			return nil, nil, true
+		end
+	end 
 	return true, nil, not showUnfilteredSpellID
 end 
 
@@ -435,8 +447,19 @@ local filterFuncs = setmetatable(auraFilters, { __index = function(t,k) return r
 -- Private API
 -----------------------------------------------------------------
 Private.Colors = colorDB
-Private.GetAuraFilterFunc = function(unit) return filterFuncs[unit or "default"] end
-Private.GetFont = function(size, outline) return fontsDB[outline and "outline" or "normal"][size] end
+
+Private.GetAuraFilterFunc = function(unit) 
+	return filterFuncs[unit or "default"] 
+end
+
+Private.GetFont = function(size, useOutline, useChatFont)
+	if (useChatFont) then 
+		return fontsDB[useOutline and "chatOutline" or "chatNormal"][size]
+	else
+		return fontsDB[useOutline and "outline" or "normal"][size]
+	end
+end
+
 Private.GetMedia = function(name, type) return ([[Interface\AddOns\%s\media\%s.%s]]):format(ADDON, name, type or "tga") end
 
 -----------------------------------------------------------------
@@ -446,8 +469,59 @@ Private.GetMedia = function(name, type) return ([[Interface\AddOns\%s\media\%s.%
 local ByPlayer = OnPlayer + OnTarget
 
 -- General Blacklist
+-- Auras listed here won't be shown on any unitframes.
 ------------------------------------------------------------------------
 AddFlags(Private, 17670, Never) 	-- Argent Dawn Commission
+
+-- Nameplate Blacklist
+-- Auras listed here will be excluded from the nameplates.
+------------------------------------------------------------------------
+-- Proximity Auras
+AddFlags(Private, 13159, NeverOnPlate) 	-- Aspect of the Pack
+AddFlags(Private,  7805, NeverOnPlate) 	-- Blood Pact
+AddFlags(Private, 11767, NeverOnPlate) 	-- Blood Pact
+AddFlags(Private, 19746, NeverOnPlate) 	-- Concentration Aura
+AddFlags(Private, 10293, NeverOnPlate) 	-- Devotion Aura
+AddFlags(Private, 19898, NeverOnPlate) 	-- Frost Resistance Aura
+AddFlags(Private, 24932, NeverOnPlate) 	-- Leader of the Pack
+AddFlags(Private, 24907, NeverOnPlate) 	-- Moonkin Aura
+AddFlags(Private, 19480, NeverOnPlate) 	-- Paranoia
+AddFlags(Private, 10301, NeverOnPlate) 	-- Retribution Aura
+AddFlags(Private, 20218, NeverOnPlate) 	-- Sanctity Aura
+AddFlags(Private, 19896, NeverOnPlate) 	-- Shadow Resistance Aura
+AddFlags(Private, 20906, NeverOnPlate) 	-- Trueshot Aura
+
+-- Timed Buffs
+AddFlags(Private, 23028, NeverOnPlate) 	-- Arcane Brilliance (Rank ?)
+AddFlags(Private,  1461, NeverOnPlate) 	-- Arcane Intellect (Rank ?)
+AddFlags(Private, 10157, NeverOnPlate) 	-- Arcane Intellect (Rank ?)
+AddFlags(Private,  6673, NeverOnPlate) 	-- Battle Shout (Rank 1)
+AddFlags(Private, 11551, NeverOnPlate) 	-- Battle Shout (Rank ?)
+AddFlags(Private, 20217, NeverOnPlate) 	-- Blessing of Kings (Rank ?)
+AddFlags(Private, 19838, NeverOnPlate) 	-- Blessing of Might (Rank ?)
+AddFlags(Private, 11743, NeverOnPlate) 	-- Detect Greater Invisibility
+AddFlags(Private, 27841, NeverOnPlate) 	-- Divine Spirit (Rank ?)
+AddFlags(Private, 25898, NeverOnPlate) 	-- Greater Blessing of Kings (Rank ?)
+AddFlags(Private, 25899, NeverOnPlate) 	-- Greater Blessing of Sanctuary (Rank ?)
+AddFlags(Private, 21850, NeverOnPlate) 	-- Gift of the Wild (Rank 2)
+AddFlags(Private, 10220, NeverOnPlate) 	-- Ice Armor (Rank ?)
+AddFlags(Private,  1126, NeverOnPlate) 	-- Mark of the Wild (Rank 1)
+AddFlags(Private,  5232, NeverOnPlate) 	-- Mark of the Wild (Rank 2)
+AddFlags(Private,  6756, NeverOnPlate) 	-- Mark of the Wild (Rank 3)
+AddFlags(Private,  5234, NeverOnPlate) 	-- Mark of the Wild (Rank 4)
+AddFlags(Private,  8907, NeverOnPlate) 	-- Mark of the Wild (Rank 5)
+AddFlags(Private,  9884, NeverOnPlate) 	-- Mark of the Wild (Rank 6)
+AddFlags(Private,  9885, NeverOnPlate) 	-- Mark of the Wild (Rank 7)
+AddFlags(Private, 10938, NeverOnPlate) 	-- Power Word: Fortitude (Rank ?)
+AddFlags(Private, 21564, NeverOnPlate) 	-- Prayer of Fortitude (Rank ?)
+AddFlags(Private, 27681, NeverOnPlate) 	-- Prayer of Spirit (Rank ?)
+AddFlags(Private, 10958, NeverOnPlate) 	-- Shadow Protection
+AddFlags(Private,   467, NeverOnPlate) 	-- Thorns (Rank 1)
+AddFlags(Private,   782, NeverOnPlate) 	-- Thorns (Rank 2)
+AddFlags(Private,  1075, NeverOnPlate) 	-- Thorns (Rank 3)
+AddFlags(Private,  8914, NeverOnPlate) 	-- Thorns (Rank 4)
+AddFlags(Private,  9756, NeverOnPlate) 	-- Thorns (Rank 5)
+AddFlags(Private,  9910, NeverOnPlate) 	-- Thorns (Rank 6)
 
 -- Druid (Balance)
 ------------------------------------------------------------------------
@@ -466,8 +540,8 @@ AddFlags(Private, 16689, OnPlayer) 	-- Nature's Grasp (Rank 3)
 AddFlags(Private, 16689, OnPlayer) 	-- Nature's Grasp (Rank 4)
 AddFlags(Private, 16689, OnPlayer) 	-- Nature's Grasp (Rank 5)
 AddFlags(Private, 16689, OnPlayer) 	-- Nature's Grasp (Rank 6)
-AddFlags(Private, 16864, OnPlayer + NoCombat + Warn) 	-- Omen of Clarity (Proc)
-AddFlags(Private, 16870, OnPlayer + NoCombat + Warn) 	-- Omen of Clarity (Proc)  -- where did this come from?
+AddFlags(Private, 16864, OnPlayer + NoCombat + Warn) 	-- Omen of Clarity (Buff)
+AddFlags(Private, 16870, OnPlayer + NoCombat + Warn) 	-- Omen of Clarity (Proc)
 AddFlags(Private,   467, ByPlayer + NoCombat + Warn) 	-- Thorns (Rank 1)
 AddFlags(Private,   782, ByPlayer + NoCombat + Warn) 	-- Thorns (Rank 2)
 AddFlags(Private,  1075, ByPlayer + NoCombat + Warn) 	-- Thorns (Rank 3)

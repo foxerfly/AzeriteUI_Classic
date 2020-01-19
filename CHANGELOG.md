@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.90-RC] 2020-01-11
+### Added
+- Spells that require reagents should now show their remaining reagent count when placed on the action bars.
+
+### Fixed
+- Trying to work around some language issues that would cause placing items on the actionbar to sometimes bug out when hovering over them. The issue was related to different formatting of some game strings in English and non-English clients.
+
+## [1.0.89-RC] 2020-01-09
+### Changed
+- Added a forced update of all ToT unitframe elements on player target change, as this previously had up to half a second delay on player target changes when the ToT frame remained visible throughout the change.
+
+## [1.0.88-RC] 2020-01-07
+### Added
+- Added subgroup numbers to the bottom left part of the raid frames. No more headache trying to figure out who's in what group, or where the Alliance AV leecher you want to report is!
+
+### Fixed
+- Fixed an issue with some raid frame elements like leader/assistant status as well as raid marks which sometimes only would update on a GUID change.
+
+## [1.0.87-RC] 2020-01-05
+### Fixed
+- Fixed a typo in the frFR translation that caused reputation tracking on frFR game clients to bug out.
+
+## [1.0.86-RC] 2019-12-31
+### Added
+- Added the very first experimental draft of our spell highlight system. Druids with Omen of Clarity will now find that Shred, Ravage, Maul and Regrowth are marked when their clearcast proc fires. This is a work in progress, and I'll expand the list for more classes, as well as write other methods into this system to light up reactive abilities like Warrior's Overpower and similar.
+- Started on the nameplate aura blacklist. Certain spam like Mark of the Wild, Leader of the Pack and various other auras will no longer show up on party member nameplates. This too is a list in growth.
+
+## [1.0.85-RC] 2019-12-18
+### Changed
+- Expanded the group frame hitboxes to cover the bottom part of the health border as well. Super easy to select targets now.
+- Further tuned the outline and shadow of both the raid warnings and error messages.
+- Dispellable and boss debuffs visible on the group frames should should now always be fully opaque, even if the group frame itself is faded down from being out of range.
+
+### Fixed
+- Fixed an issue that prevented raid marks, leader- and assistant crowns as well as main tank and main assist icons from showing up on the raid frames.
+
+## [1.0.84-RC] 2019-12-17
+### Changed
+- Prettied up the raid warnings a bit more.
+- Slightly trimmed the popups.
+- Went for a more elegant fix for the bg popups, where instead of changing their text hide them completely. Now a flashing red message - in addition to the usual bg ready sound - will tell you how to enter the available battleground. This change is Tukz-inspired.
+
+### Fixed
+- Fixed the health value of group member pet tooltips, where their actual health value would be presented with a percentage sign behind. That was a visual bug, the value was their actual health all along.
+
+## [1.0.83-RC] 2019-12-16
+### Changed
+- Boss/dispellable debuff slot on group frames should no longer react to mouseover events. There won't be a tooltip anymore, but it won't be in the way of clicking on the unitframe to select it as your target anymore.
+- RaidWarnings shouldn't look as freaky and warped anymore, as we have disabled certain very faulty scaling features the default user interface applies to these messages. We also changed the font slightly to make it more readably on action filled backgrounds in raid situations.
+
+## [1.0.82-RC] 2019-12-15
+### Changed
+- Fixing a wrong date in some secret code. No biggie, it'll fire tomorrow for those lacking this update. But I want pretty colors!
+
+## [1.0.81-RC] 2019-12-14
+### Changed
+- The minimap tracking button now changes position based on whether the BG eye is visible or not.
+
+## [1.0.80-RC] 2019-12-12
+### Changed
+- Removed the ability to enter BGs through the bugged popup. Now we'll have to learn to use the eye, or simply not get anywhere. I changed the text in the popup to reflect this new behavior. This is a temporary fix until I can figure out how to get a working BG entry popup again.
+
 ## [1.0.79-RC] 2019-12-11
 ### Fixed
 - Both the Minimap button and BG entry popup should work... better, now. 

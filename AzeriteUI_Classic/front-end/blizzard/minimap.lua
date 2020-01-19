@@ -1053,6 +1053,7 @@ Module.SetUpMinimap = function(self)
 
 	local BGFrame = MiniMapBattlefieldFrame
 	local BGFrameBorder = MiniMapBattlefieldBorder
+	local BGIcon = MiniMapBattlefieldIcon
 
 	if BGFrame then
 		local button = Handler:CreateOverlayFrame()
@@ -1062,20 +1063,30 @@ Module.SetUpMinimap = function(self)
 
 		local point, x, y = unpack(layout.BattleGroundEyePlace)
 
+		-- For some reason any other points 
 		BGFrame:ClearAllPoints()
-		BGFrame:SetPoint("TOPRIGHT", Minimap, 0, 0)
+		BGFrame:SetPoint("TOPRIGHT", Minimap, -4, -2)
+		BGFrame:SetHitRectInsets(-8, -8, -8, -8)
 		BGFrameBorder:Hide()
+		BGIcon:SetAlpha(0)
 	
 		local eye = button:CreateTexture()
-		eye:SetDrawLayer("ARTWORK", 1)
+		eye:SetDrawLayer("OVERLAY", 1)
 		eye:SetPoint("CENTER", 0, 0)
 		eye:SetSize(unpack(layout.BattleGroundEyeSize))
 		eye:SetTexture(layout.BattleGroundEyeTexture)
 		eye:SetVertexColor(unpack(layout.BattleGroundEyeColor))
 		eye:SetShown(BGFrame:IsShown())
 
-		BGFrame:HookScript("OnShow", function() eye:Show() end)
-		BGFrame:HookScript("OnHide", function() eye:Hide() end)
+		tracking:Place(unpack(BGFrame:IsShown() and layout.TrackingButtonPlaceAlternate or layout.TrackingButtonPlace))
+		BGFrame:HookScript("OnShow", function() 
+			eye:Show()
+			tracking:Place(unpack(layout.TrackingButtonPlaceAlternate))
+		end)
+		BGFrame:HookScript("OnHide", function() 
+			eye:Hide()
+			tracking:Place(unpack(layout.TrackingButtonPlace))
+		end)
 	end
 
 end 

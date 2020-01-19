@@ -372,33 +372,32 @@ local BlizzardMicroMenu_Button_PostCreate = Core_MenuButton_PostCreate
 local BlizzardMicroMenu_Button_PostUpdate = Core_MenuButton_Layers_PostUpdate
 
 -- Blizzard Popup PostCreate styling
-local BlizzardPopup_PostCreate = function(self, popup)
+local popupBackdrops = {}
+local BlizzardPopup_OnShow = function(popup)
 	popup:SetBackdrop(nil)
 	popup:SetBackdropColor(0,0,0,0)
 	popup:SetBackdropBorderColor(0,0,0,0)
 
-	-- 8.2.0 Additions
 	if (popup.Border) then 
-		popup.Border:Hide()
 		popup.Border:SetAlpha(0)
 	end
 
 	-- add a bigger backdrop frame with room for our larger buttons
-	if (not popup.backdrop) then
-		local backdrop = CreateFrame("Frame", nil, popup)
+	local backdrop = popupBackdrops[popup]
+	if (not backdrop) then
+		backdrop = CreateFrame("Frame", nil, popup)
 		backdrop:SetFrameLevel(popup:GetFrameLevel())
-		backdrop:SetPoint("TOPLEFT", -10, 10)
-		backdrop:SetPoint("BOTTOMRIGHT", 10, -10)
-		popup.backdrop = backdrop
+		backdrop:SetPoint("TOPLEFT", -4, 4)
+		backdrop:SetPoint("BOTTOMRIGHT", 4, -4)
+		popupBackdrops[popup] = backdrop
 	end	
 
-	local backdrop = popup.backdrop
+	local sizeMod = 3/4
 	backdrop:SetBackdrop({
 		bgFile = [[Interface\ChatFrame\ChatFrameBackground]],
 		edgeFile = GetMedia("tooltip_border_blizzcompatible"),
-		edgeSize = 32, 
-		tile = false, -- tiles don't tile vertically (?)
-		--tile = true, tileSize = 256, 
+		edgeSize = 32*sizeMod, 
+		tile = false, 
 		insets = { top = 2.5, bottom = 2.5, left = 2.5, right = 2.5 }
 	})
 	backdrop:SetBackdropColor(.05, .05, .05, .85)
@@ -416,40 +415,44 @@ local BlizzardPopup_PostCreate = function(self, popup)
 			button:SetBackdropColor(0,0,0,0)
 			button:SetBackdropBorderColor(0,0,0.0)
 
-			-- Create our own custom border.
-			-- Using our new thick tooltip border, just scaled down slightly.
-			local sizeMod = 3/4
-			local border = CreateFrame("Frame", nil, button)
-			border:SetFrameLevel(button:GetFrameLevel() - 1)
-			border:SetPoint("TOPLEFT", -23*sizeMod, 23*sizeMod -2)
-			border:SetPoint("BOTTOMRIGHT", 23*sizeMod, -23*sizeMod -2)
-			border:SetBackdrop({
-				bgFile = [[Interface\ChatFrame\ChatFrameBackground]],
-				edgeFile = GetMedia("tooltip_border"),
-				edgeSize = 32*sizeMod,
-				insets = {
-					left = 22*sizeMod,
-					right = 22*sizeMod,
-					top = 22*sizeMod +2,
-					bottom = 22*sizeMod -2
-				}
-			})
-			border:SetBackdropColor(.05, .05, .05, .75)
-			border:SetBackdropBorderColor(Colors.offwhite[1], Colors.offwhite[2], Colors.offwhite[3])
-		
-			button:HookScript("OnEnter", function() 
-				button:SetBackdropColor(0,0,0,0)
-				button:SetBackdropBorderColor(0,0,0.0)
-				border:SetBackdropColor(.1, .1, .1, .75)
-				border:SetBackdropBorderColor(Colors.highlight[1], Colors.highlight[2], Colors.highlight[3])
-			end)
-
-			button:HookScript("OnLeave", function() 
-				button:SetBackdropColor(0,0,0,0)
-				button:SetBackdropBorderColor(0,0,0.0)
+			local border = popupBackdrops[button]
+			if (not border) then 
+				local sizeMod = 2/3
+				border = CreateFrame("Frame", nil, button)
+				border:SetFrameLevel(button:GetFrameLevel() - 1)
+				border:SetPoint("TOPLEFT", -23*sizeMod, 23*sizeMod -2)
+				border:SetPoint("BOTTOMRIGHT", 23*sizeMod, -23*sizeMod -2)
+				border:SetBackdrop({
+					bgFile = [[Interface\ChatFrame\ChatFrameBackground]],
+					edgeFile = GetMedia("tooltip_border"),
+					edgeSize = 32*sizeMod,
+					insets = {
+						left = 22*sizeMod,
+						right = 22*sizeMod,
+						top = 22*sizeMod +2,
+						bottom = 22*sizeMod -2
+					}
+				})
 				border:SetBackdropColor(.05, .05, .05, .75)
 				border:SetBackdropBorderColor(Colors.offwhite[1], Colors.offwhite[2], Colors.offwhite[3])
-			end)
+
+				button:HookScript("OnEnter", function() 
+					button:SetBackdropColor(0,0,0,0)
+					button:SetBackdropBorderColor(0,0,0.0)
+					popupBackdrops[button]:SetBackdropColor(.1, .1, .1, .75)
+					popupBackdrops[button]:SetBackdropBorderColor(Colors.highlight[1], Colors.highlight[2], Colors.highlight[3])
+				end)
+	
+				button:HookScript("OnLeave", function() 
+					button:SetBackdropColor(0,0,0,0)
+					button:SetBackdropBorderColor(0,0,0.0)
+					popupBackdrops[button]:SetBackdropColor(.05, .05, .05, .75)
+					popupBackdrops[button]:SetBackdropBorderColor(Colors.offwhite[1], Colors.offwhite[2], Colors.offwhite[3])
+				end)
+
+				popupBackdrops[button] = border
+			end
+		
 		end
 	end
 
@@ -483,6 +486,11 @@ local BlizzardPopup_PostCreate = function(self, popup)
 	editbox:SetBackdropColor(0, 0, 0, 0)
 	editbox:SetBackdropBorderColor(.15, .1, .05, 1)
 	editbox:SetTextInsets(6,6,0,0)
+	
+end
+
+local BlizzardPopup_PostCreate = function(self, popup)
+	popup:HookScript("OnShow", BlizzardPopup_OnShow)
 end
 
 -- Blizzard Popup anchor points post updates
@@ -1302,23 +1310,29 @@ local SmallFrame_AlphaPostUpdate = function(self)
 	end
 end
 
-local SmallFrame_CastBarPostUpdate = function(element, unit)
+-- Dropping this, it's not working. Doing it in the module instead.
+local SmallFrame_BarTextPostUpdate = function(element, unit)
 	local self = element._owner
 	local cast = self.Cast
-	local healthPercent = self.Health.ValuePercent
+	local castName = self.Cast.Name
+	local healthValue = self.Health.ValuePercent
 
-	-- Bug in the back-end, hotfixing it here for now. 
-	if UnitIsDeadOrGhost(unit) then 
-		cast.Name:Hide()
-		healthPercent:SetText(DEAD)
-		healthPercent:Show()
-	elseif (cast.casting or cast.channeling) then 
-		healthPercent:Hide()
-		cast.Name:Show()
-	else 
-		cast.Name:Hide()
-		healthPercent:Show()
-	end 
+	-- Seems to be some flickering going on,
+	-- will attempt to fix it by wiping texts when hidden.
+	if (UnitIsDeadOrGhost(unit)) then
+		castName:SetText("")
+		castName:Hide()
+		healthValue:SetText(DEAD)
+		healthValue:Show()
+	elseif (cast.casting or cast.channeling) then
+		healthValue:SetText("")
+		healthValue:Hide()
+		castName:Show()
+	else
+		castName:SetText("")
+		castName:Hide()
+		healthValue:Show()
+	end
 end
 
 local TinyFrame_OverrideValue = function(element, unit, min, max, disconnected, dead, tapped)
@@ -1460,7 +1474,7 @@ local Template_SmallFrame = {
 	CastBarNameSize = { Constant.SmallBar[1] - 20, Constant.SmallBar[2] }, 
 	CastBarOrientation = "RIGHT", 
 	CastBarPlace = { "CENTER", 0, 0 },
-	CastBarPostUpdate =	SmallFrame_CastBarPostUpdate,
+	--CastBarPostUpdate =	SmallFrame_BarTextPostUpdate,
 	CastBarSize = Constant.SmallBar,
 	CastBarSmoothingFrequency = .15,
 	CastBarSmoothingMode = "bezier-fast-in-slow-out", 
@@ -1491,7 +1505,7 @@ local Template_SmallFrame = {
 	HealthBackdropTexture = GetMedia("cast_back"), 
 	HealthBarTexture = Constant.SmallBarTexture, 
 	HealthBarOrientation = "RIGHT", 
-	HealthBarPostUpdate = SmallFrame_CastBarPostUpdate, 
+	--HealthBarPostUpdate = SmallFrame_BarTextPostUpdate, 
 	HealthBarSetFlippedHorizontally = false, 
 	HealthBarSparkMap = {
 		top = {
@@ -1583,8 +1597,9 @@ local Template_SmallFrame_Auras = setmetatable({
 
 -- Used for ToT.
 local Template_SmallFrameReversed = setmetatable({
-	CastBarOrientation = "LEFT", 
-	CastBarSetFlippedHorizontally = true, 
+	CastBarSize = nil, -- remove it for now to avoid the flickering. It's only ToT.
+	--CastBarOrientation = "LEFT", 
+	--CastBarSetFlippedHorizontally = true, 
 	HealthBarOrientation = "LEFT", 
 	HealthBarSetFlippedHorizontally = true 
 }, { __index = Template_SmallFrame })
@@ -1816,10 +1831,10 @@ Layouts[ADDON] = {
 	MenuPlace = { "BOTTOMRIGHT", -41, 32 },
 	MenuSize = { 320 -10, 70 }, 
 	MenuToggleButtonSize = { 48, 48 }, 
-	MenuToggleButtonPlace = { "BOTTOMRIGHT", -4, 4 }, 
-	MenuToggleButtonIcon = GetMedia("config_button"), 
-	MenuToggleButtonIconPlace = { "CENTER", 0, 0 }, 
-	MenuToggleButtonIconSize = { 96, 96 }, 
+	MenuToggleButtonPlace = { "BOTTOMRIGHT", -4, 4 },
+	MenuToggleButtonIcon = GetMedia("config_button"),
+	MenuToggleButtonIconPlace = { "CENTER", 0, 0 },
+	MenuToggleButtonIconSize = { 96, 96 },
 	MenuToggleButtonIconColor = { Colors.ui.stone[1], Colors.ui.stone[2], Colors.ui.stone[3] }, 
 	MenuWindow_CreateBorder = Core_Window_CreateBorder,
 	MenuWindow_OnHide = Core_Window_OnHide, 
@@ -2057,6 +2072,10 @@ Layouts.ActionBarMain = {
 	SpellAutoCastGlowTexture = GetMedia("actionbutton-ants-small-glow"),
 	SpellAutoCastPlace = { "CENTER", 0, 0 },
 	SpellAutoCastSize = { 64/(122/256), 64/(122/256) },
+	SpellHighlightPlace = { "CENTER", 0, 0 },
+	SpellHighlightSize = { 64/(122/256), 64/(122/256) },
+	SpellHighlightTexture = GetMedia("actionbutton-spellhighlight"),
+	SpellHighlightColor = { 255/255, 225/255, 125/255, .75 },
 	TooltipColorNameAsSpellWithUse = true, -- color item name as a spell (not by rarity) when it has a Use effect
 	TooltipHideBindsWithUse = true, -- hide item bind status when it has a Use effect
 	TooltipHideEquipTypeWithUse = false, -- hide item equip location and item type with Use effect
@@ -2262,7 +2281,8 @@ Layouts.Minimap = {
 	TrackingButtonIconBgTexture = GetMedia("hp_critter_case_glow"),
 	TrackingButtonIconMask = GetMedia("hp_critter_case_glow"), -- actionbutton_circular_mask
 	TrackingButtonIconSize = { 28, 28 },
-	TrackingButtonPlace = { "CENTER", math_cos(22.*math_pi/180) * (213/2 + 10), math_sin(22.5*math_pi/180) * (213/2 + 10) }, 
+	TrackingButtonPlace = { "CENTER", math_cos(45*math_pi/180) * (213/2 + 10), math_sin(45*math_pi/180) * (213/2 + 10) }, 
+	TrackingButtonPlaceAlternate = { "CENTER", math_cos(22.*math_pi/180) * (213/2 + 10), math_sin(22.5*math_pi/180) * (213/2 + 10) }, 
 	TrackingButtonSize = { 56, 56 }, 
 	XP_OverrideValue = Minimap_XP_OverrideValue,
 	ZonePlaceFunc = Minimap_ZoneName_PlaceFunc,
@@ -3280,6 +3300,9 @@ Layouts.UnitFrameBoss = setmetatable({
 
 -- 2-5 player groups
 Layouts.UnitFrameParty = setmetatable({
+
+	HitRectInsets = { 0, 0, 0, -10 },
+
 	AlternateGroupAnchor = "BOTTOMLEFT", 
 	AlternateGrowthX = 140, -- Horizontal growth per new unit
 	AlternateGrowthY = 0, -- Vertical growth per new unit
@@ -3385,7 +3408,7 @@ Layouts.UnitFrameParty = setmetatable({
 	GroupAuraButtonBorderBackdrop = { edgeFile = GetMedia("aura_border"), edgeSize = 16 },
 	GroupAuraButtonBorderBackdropColor = { 0, 0, 0, 0 },
 	GroupAuraButtonBorderBackdropBorderColor = { Colors.ui.stone[1] *.3, Colors.ui.stone[2] *.3, Colors.ui.stone[3] *.3 },
-	GroupAuraButtonDisableMouse = false, 
+	GroupAuraButtonDisableMouse = true, 
 	GroupAuraTooltipDefaultPosition = nil, 
 	GroupAuraPostUpdate = function(element, unit)
 		local self = element._owner 
@@ -3561,6 +3584,7 @@ Layouts.UnitFramePet = setmetatable({
 Layouts.UnitFrameRaid = setmetatable({
 
 	TargetHighlightSize = { 140 * .94, 90 *.94 },
+	HitRectInsets = { 0, 0, 0, -10 },
 	Size = Constant.RaidFrame, 
 	Place = { "TOPLEFT", "UICenter", "TOPLEFT", 64, -42 }, -- Position of the initial frame
 	AlternatePlace = { "BOTTOMLEFT", "UICenter", "BOTTOMLEFT", 64, 360 - 10 }, -- Position of the initial frame
@@ -3587,6 +3611,13 @@ Layouts.UnitFrameRaid = setmetatable({
 	GroupRowsEpic = 1, 
 	GroupAnchorEpic = "TOPLEFT", 
 	GroupAnchorEpicHealerMode = "BOTTOMLEFT", 
+
+	GroupNumberColor = { Colors.offwhite[1], Colors.offwhite[2], Colors.offwhite[3], .75 },
+	GroupNumberDrawLayer = { "ARTWORK", 1 },
+	GroupNumberFont = GetFont(11,true),
+	GroupNumberJustifyH = "RIGHT",
+	GroupNumberJustifyV = "BOTTOM",
+	GroupNumberPlace = { "BOTTOMLEFT", 2, -6 },
 
 	HealthSize = Constant.RaidBar, 
 	HealthBackdropSize = { 140 *.94, 90 *.94 },
@@ -3628,7 +3659,7 @@ Layouts.UnitFrameRaid = setmetatable({
 	GroupAuraButtonBorderBackdrop = { edgeFile = GetMedia("aura_border"), edgeSize = 12 },
 	GroupAuraButtonBorderBackdropColor = { 0, 0, 0, 0 },
 	GroupAuraButtonBorderBackdropBorderColor = { Colors.ui.stone[1] *.3, Colors.ui.stone[2] *.3, Colors.ui.stone[3] *.3 },
-	GroupAuraButtonDisableMouse = false, 
+	GroupAuraButtonDisableMouse = true, 
 	GroupAuraTooltipDefaultPosition = nil, 
 	GroupAuraPostUpdate = function(element, unit)
 		local self = element._owner 

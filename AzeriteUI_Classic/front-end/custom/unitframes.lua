@@ -455,18 +455,28 @@ local StyleSmallFrame = function(self, unit, id, layout, ...)
 	
 	-- Cast Bar
 	-----------------------------------------------------------
-	local cast = content:CreateStatusBar()
-	cast:SetSize(unpack(layout.CastBarSize))
-	cast:SetFrameLevel(health:GetFrameLevel() + 1)
-	cast:Place(unpack(layout.CastBarPlace))
-	cast:SetOrientation(layout.CastBarOrientation) 
-	cast:SetSmoothingMode(layout.CastBarSmoothingMode) 
-	cast:SetSmoothingFrequency(layout.CastBarSmoothingFrequency)
-	cast:SetStatusBarColor(unpack(layout.CastBarColor)) 
-	cast:SetStatusBarTexture(layout.CastBarTexture)
-	cast:SetSparkMap(layout.CastBarSparkMap) 
-	self.Cast = cast
-	self.Cast.PostUpdate = layout.CastBarPostUpdate
+	if (layout.CastBarSize) then 
+		local cast = content:CreateStatusBar()
+		cast:SetSize(unpack(layout.CastBarSize))
+		cast:SetFrameLevel(health:GetFrameLevel() + 1)
+		cast:Place(unpack(layout.CastBarPlace))
+		cast:SetOrientation(layout.CastBarOrientation) 
+		cast:SetSmoothingMode(layout.CastBarSmoothingMode) 
+		cast:SetSmoothingFrequency(layout.CastBarSmoothingFrequency)
+		cast:SetStatusBarColor(unpack(layout.CastBarColor)) 
+		cast:SetStatusBarTexture(layout.CastBarTexture)
+		cast:SetSparkMap(layout.CastBarSparkMap) 
+		self.Cast = cast
+		self.Cast.PostUpdate = layout.CastBarPostUpdate
+
+		-- A little hack here. Does it work better? NO!
+		local toggleHealthValue = function()
+			healthPerc:SetShown((not cast:IsShown()))
+		end
+
+		cast:HookScript("OnShow", toggleHealthValue)
+		cast:HookScript("OnHide", toggleHealthValue)
+	end
 
 	-- Cast Name
 	local name = (layout.CastBarNameParent and self[layout.CastBarNameParent] or overlay):CreateFontString()
@@ -533,8 +543,8 @@ end
 -- Party
 local StylePartyFrame = function(self, unit, id, layout, ...)
 
-	self:SetSize(unpack(layout.Size)) 
-	self:SetHitRectInsets(0, 0, 0, 0)
+	self:SetSize(unpack(layout.Size))
+	self:SetHitRectInsets(unpack(layout.HitRectInsets))
 
 	-- Assign our own global custom colors
 	self.colors = Colors
@@ -805,7 +815,7 @@ local StyleRaidFrame = function(self, unit, id, layout, ...)
 	self.layout = layout
 	self.colors = Colors
 	self:SetSize(unpack(layout.Size)) 
-	self:SetHitRectInsets(0, 0, 0, 0)
+	self:SetHitRectInsets(unpack(layout.HitRectInsets))
 
 	-- Scaffolds
 	-----------------------------------------------------------
@@ -887,14 +897,6 @@ local StyleRaidFrame = function(self, unit, id, layout, ...)
 	targetHighlight.colorTarget = layout.TargetHighlightTargetColor
 	self.TargetHighlight = targetHighlight
 
-	-- Raid Role
-	local raidRole = overlay:CreateTexture()
-	raidRole:SetPoint(layout.RaidRolePoint, self[layout.RaidRoleAnchor], unpack(layout.RaidRolePlace))
-	raidRole:SetSize(unpack(layout.RaidRoleSize))
-	raidRole:SetDrawLayer(unpack(layout.RaidRoleDrawLayer))
-	raidRole.roleTextures = { RAIDTARGET = layout.RaidRoleRaidTargetTexture }
-	self.RaidRole = raidRole
-	
 	-- Unit Name
 	local name = overlay:CreateFontString()
 	name:SetPoint(unpack(layout.NamePlace))
@@ -907,9 +909,28 @@ local StyleRaidFrame = function(self, unit, id, layout, ...)
 	name.useDots = layout.NameUseDots
 	self.Name = name
 
+	-- Raid Role
+	local raidRole = overlay:CreateTexture()
+	raidRole:SetPoint(layout.RaidRolePoint, self[layout.RaidRoleAnchor], unpack(layout.RaidRolePlace))
+	raidRole:SetSize(unpack(layout.RaidRoleSize))
+	raidRole:SetDrawLayer(unpack(layout.RaidRoleDrawLayer))
+	raidRole.roleTextures = { RAIDTARGET = layout.RaidRoleRaidTargetTexture }
+	self.RaidRole = raidRole
+
+	-- Group Number
+	local groupNumber = overlay:CreateFontString()
+	groupNumber:SetPoint(unpack(layout.GroupNumberPlace))
+	groupNumber:SetDrawLayer(unpack(layout.GroupNumberDrawLayer))
+	groupNumber:SetJustifyH(layout.GroupNumberJustifyH)
+	groupNumber:SetJustifyV(layout.GroupNumberJustifyV)
+	groupNumber:SetFontObject(layout.GroupNumberFont)
+	groupNumber:SetTextColor(unpack(layout.GroupNumberColor))
+	self.GroupNumber = groupNumber
+	
 	-- Group Debuff (#1)
 	-----------------------------------------------------------
 	local groupAura = overlay:CreateFrame("Button")
+	groupAura:SetIgnoreParentAlpha(true)
 	groupAura:SetFrameLevel(overlay:GetFrameLevel() - 4)
 	groupAura:SetPoint(unpack(layout.GroupAuraPlace))
 	groupAura:SetSize(unpack(layout.GroupAuraSize))
@@ -1136,7 +1157,7 @@ UnitStyles.StylePlayerFrame = function(self, unit, id, layout, ...)
 
 	local day = tonumber(date("%d"))
 	local month = tonumber(date("%m"))
-	if ((month >= 12) and (day >=16 )) or ((month <= 1) and (day <= 2)) then 
+	if ((month >= 12) and (day >= 15 )) or ((month <= 1) and (day <= 2)) then 
 		local winterVeilPower = power:CreateTexture()
 		winterVeilPower:SetSize(unpack(layout.WinterVeilPowerSize))
 		winterVeilPower:SetPoint(unpack(layout.WinterVeilPowerPlace))
@@ -1198,7 +1219,7 @@ UnitStyles.StylePlayerFrame = function(self, unit, id, layout, ...)
 		
 		local day = tonumber(date("%d"))
 		local month = tonumber(date("%m"))
-		if ((month >= 12) and (day >=16 )) or ((month <= 1) and (day <= 2)) then 
+		if ((month >= 12) and (day >=15 )) or ((month <= 1) and (day <= 2)) then 
 			local winterVeilMana = extraPower:CreateTexture()
 			winterVeilMana:SetSize(unpack(layout.WinterVeilManaSize))
 			winterVeilMana:SetPoint(unpack(layout.WinterVeilManaPlace))
